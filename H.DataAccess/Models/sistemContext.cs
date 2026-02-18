@@ -336,5 +336,35 @@ public partial class sistemContext : DbContext
                 .HasComment("Usuario de modificación del registro");
         });
 
+        modelBuilder.Entity<TTorta>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.ToTable("TTorta");
+            entity.Property(e => e.Nombre)
+                .HasMaxLength(100)
+                .IsUnicode(false);
+            entity.Property(e => e.Descripcion)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasComment("");
+            entity.Property(e => e.PrecioVenta)
+                .HasPrecision(18, 2)
+                .HasComment("Costo unitario del producto");
+            entity.Property(e => e.StockDisponible).HasComment("Stock del producto");
+            entity.Property(e => e.Estado).HasComment("Estado del registro");
+            entity.Property(e => e.FechaCreacion)
+                .HasColumnType("datetime")
+                .HasComment("Fecha de creación del registro");
+            entity.Property(e => e.FechaModificacion)
+                .HasColumnType("datetime")
+                .HasComment("Fecha de modificación del registro");
+            entity.Property(e => e.UsuarioCreacion)
+                .HasMaxLength(100)
+                .HasComment("Usuario de creación del registro");
+            entity.Property(e => e.UsuarioModificacion)
+                .HasMaxLength(100)
+                .HasComment("Usuario de modificación del registro");
+        });
+
     }
 }

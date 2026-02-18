@@ -33,6 +33,7 @@ namespace H.DataAccess.UnitofWork
         private IPersonaRepository _PersonaRepository;
         private IUsuarioRepository _UsuarioRepository;
         private IUsuarioRolRepository _UsuarioRolRepository;
+        private ITortaRepository _TortaRepository;
 
         IProductoRepository IUnitOfWork.ProductoRepository
         {
@@ -83,6 +84,14 @@ namespace H.DataAccess.UnitofWork
             get
             {
                 return _UsuarioRolRepository ?? new UsuarioRolRepository(_context, _connectionFactory);
+            }
+        }
+
+        ITortaRepository IUnitOfWork.TortaRepository
+        {
+            get
+            {
+                return _TortaRepository ?? new TortaRepository(_context, _connectionFactory);
             }
         }
 
