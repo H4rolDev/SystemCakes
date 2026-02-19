@@ -146,7 +146,7 @@ namespace H.DataAccess.Repositorios
                     var nuevaPersona = new TPersona
                     {
                         IdUsuario = nuevoUsuario.Id,
-                        IdTipoDocumento = persona.IdTipoDocumento,
+                        TipoDocumento = persona.TipoDocumento,
                         NumeroDocumento = persona.NumeroDocumento,
                         Nombres = persona.Nombres,
                         ApellidoPaterno = persona.ApellidoPaterno,
@@ -222,7 +222,7 @@ namespace H.DataAccess.Repositorios
                 {
                     Id = personaDb.Id,
                     IdUsuario = personaDb.IdUsuario,
-                    IdTipoDocumento = personaDb.IdTipoDocumento,
+                    TipoDocumento = personaDb.TipoDocumento,
                     NumeroDocumento = personaDb.NumeroDocumento,
                     Nombres = personaDb.Nombres,
                     ApellidoPaterno = personaDb.ApellidoPaterno,
@@ -396,7 +396,7 @@ namespace H.DataAccess.Repositorios
                     var nuevaPersona = new TPersona
                     {
                         IdUsuario = nuevoUsuario.Id,
-                        IdTipoDocumento = persona.IdTipoDocumento,
+                        TipoDocumento = persona.TipoDocumento,
                         NumeroDocumento = persona.NumeroDocumento,
                         Nombres = persona.Nombres,
                         ApellidoPaterno = persona.ApellidoPaterno,

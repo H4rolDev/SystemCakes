@@ -9,7 +9,7 @@ namespace H.DTOs
     public class PersonaDTO
     {
         public int Id { get; set; }
-        public int IdTipoDocumento { get; set; }
+        public string TipoDocumento { get; set; }
         public string? NumeroDocumento { get; set; }
         public string Nombres { get; set; } = null!;
         public string? ApellidoPaterno { get; set; }

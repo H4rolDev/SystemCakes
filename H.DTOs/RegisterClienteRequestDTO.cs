@@ -11,7 +11,7 @@ namespace H.DTOs
         public string Username { get; set; } = null!;
         public string Password { get; set; } = null!;
 
-        public int IdTipoDocumento { get; set; }
+        public string TipoDocumento { get; set; }
         public string NumeroDocumento { get; set; } = null!;
         public string Nombres { get; set; } = null!;
         public string ApellidoPaterno { get; set; } = null!;

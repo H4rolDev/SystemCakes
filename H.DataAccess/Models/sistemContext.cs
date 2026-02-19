@@ -313,7 +313,7 @@ public partial class sistemContext : DbContext
             entity.ToTable("TPersona");
             entity.Property(e => e.Id).HasComment("Identificador de registro");
             entity.Property(e => e.IdUsuario).HasComment("Identificador de usuario");
-            entity.Property(e => e.IdTipoDocumento)
+            entity.Property(e => e.TipoDocumento)
                 .HasMaxLength(50);
             entity.Property(e => e.NumeroDocumento)
                 .HasMaxLength(50);

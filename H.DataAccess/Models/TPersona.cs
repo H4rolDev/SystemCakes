@@ -19,7 +19,7 @@ namespace H.DataAccess.Models
         /// <summary>
         /// Identificador del tipo de documento.
         /// </summary>
-        public int IdTipoDocumento { get; set; }
+        public string TipoDocumento { get; set; }
         /// <summary>
         /// Numero de documento del usuario.
         /// </summary>

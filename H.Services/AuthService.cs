@@ -74,7 +74,7 @@ namespace H.Services
                     Persona = persona != null ? new PersonaDTO
                     {
                         Id = persona.Id,
-                        IdTipoDocumento = persona.IdTipoDocumento,
+                        TipoDocumento = persona.TipoDocumento,
                         NumeroDocumento = persona.NumeroDocumento,
                         Nombres = persona.Nombres,
                         ApellidoPaterno = persona.ApellidoPaterno,
@@ -135,7 +135,7 @@ namespace H.Services
 
                 var persona = new Persona
                 {
-                    IdTipoDocumento = request.IdTipoDocumento,
+                    TipoDocumento = request.TipoDocumento,
                     NumeroDocumento = request.NumeroDocumento,
                     Nombres = request.Nombres,
                     ApellidoPaterno = request.ApellidoPaterno,
@@ -273,7 +273,7 @@ namespace H.Services
 
                 var persona = new Persona
                 {
-                    IdTipoDocumento = request.IdTipoDocumento,
+                    TipoDocumento = request.TipoDocumento,
                     NumeroDocumento = request.NumeroDocumento,
                     Nombres = request.Nombres,
                     ApellidoPaterno = request.ApellidoPaterno,
