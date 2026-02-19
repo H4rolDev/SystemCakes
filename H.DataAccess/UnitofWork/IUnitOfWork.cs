@@ -15,6 +15,7 @@ namespace H.DataAccess.UnitofWork
         IUsuarioRolRepository UsuarioRolRepository { get; }
         ITortaRepository TortaRepository { get; }
         ITipoDocumentoRepository TipoDocumentoRepository { get; }
+        IInsumoRepository InsumoRepository { get; }
 
         void Commit();
         void Rollback();

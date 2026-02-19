@@ -35,6 +35,7 @@ namespace H.DataAccess.UnitofWork
         private IUsuarioRolRepository _UsuarioRolRepository;
         private ITortaRepository _TortaRepository;
         private ITipoDocumentoRepository _TipoDocumentoRepository;
+        private IInsumoRepository _InsumoRepository;
 
         IProductoRepository IUnitOfWork.ProductoRepository
         {
@@ -101,6 +102,14 @@ namespace H.DataAccess.UnitofWork
             get
             {
                 return _TipoDocumentoRepository ?? new TipoDocumentoRepository(_context, _connectionFactory);
+            }
+        }
+
+        IInsumoRepository IUnitOfWork.InsumoRepository
+        {
+            get
+            {
+                return _InsumoRepository ?? new InsumoRepository(_context, _connectionFactory);
             }
         }
 
