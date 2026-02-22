@@ -24,6 +24,7 @@ public partial class sistemContext : DbContext
     public virtual DbSet<TTipoUsuario> TTipoUsuario { get; set; }
     public virtual DbSet<TCompra> TCompra { get; set; }
     public virtual DbSet<TCompraDetalle> TCompraDetalle { get; set; }
+    public virtual DbSet<TRecetaTorta> TRecetaTorta { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
 
@@ -455,6 +456,38 @@ public partial class sistemContext : DbContext
             entity.HasOne<TCompra>()
                 .WithMany()
                 .HasForeignKey(e => e.IdCompra);
+
+            entity.HasOne<TInsumo>()
+                .WithMany()
+                .HasForeignKey(e => e.IdInsumo);
+        });
+
+        modelBuilder.Entity<TRecetaTorta>(entity =>
+        {
+            entity.ToTable("TRecetaTorta");
+            entity.Property(e => e.Id).HasComment("Identificador de registro");
+            entity.Property(e => e.IdTorta).HasComment("Identificador de torta");
+            entity.Property(e => e.IdInsumo).HasComment("Identificador del insumo");
+            entity.Property(e => e.CantidadNecesaria).HasComment("Cantidad de insumos");
+            entity.Property(e => e.Estado).HasComment("Estado del registro");
+            entity.Property(e => e.UsuarioCreacion)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasComment("Usuario de creación del registro");
+            entity.Property(e => e.UsuarioModificacion)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasComment("Usuario de modificación del registro");
+            entity.Property(e => e.FechaCreacion)
+                .HasColumnType("datetime")
+                .HasComment("Fecha de creación del registro");
+            entity.Property(e => e.FechaModificacion)
+                .HasColumnType("datetime")
+                .HasComment("Fecha de modificación del registro");
+
+            entity.HasOne<TTorta>()
+                .WithMany()
+                .HasForeignKey(e => e.IdTorta);
 
             entity.HasOne<TInsumo>()
                 .WithMany()

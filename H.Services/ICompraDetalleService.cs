@@ -10,5 +10,6 @@ namespace H.Services
         int Delete(int id, string usuario);
         CompraDetalle GetById(int id);
         IEnumerable<CompraDetalleListadoDTO> ObtenerCombo();
+        public int AddMultipleTabla(CompraInsertDTO dto);
     }
 }
