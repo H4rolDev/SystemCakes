@@ -12,5 +12,7 @@ namespace H.DataAccess.Entidades
         public string Descripcion {  get; set; }
         public decimal PrecioVenta {  get; set; }
         public decimal StockDisponible {  get; set; }
+        public string? ImagenUrl { get; set; }
+        public string? ImagenPublicId { get; set; }
     }
 }

@@ -12,10 +12,12 @@ namespace H.API.PRINCIPAL.Controllers
     public class TortaController : ControllerBase
     {
         private IUnitOfWork unitOfWork;
+        private readonly ICloudinaryService _cloudinaryService;
 
-        public TortaController(IUnitOfWork unitOfWork)
+        public TortaController(IUnitOfWork unitOfWork, ICloudinaryService cloudinaryService)
         {
             this.unitOfWork = unitOfWork;
+            _cloudinaryService = cloudinaryService;
         }
 
         [HttpPost("Insertar")]
@@ -23,7 +25,7 @@ namespace H.API.PRINCIPAL.Controllers
         {
             try
             {
-                var servicio = new TortaService(unitOfWork);
+                var servicio = new TortaService(unitOfWork, _cloudinaryService);
                 producto.FechaCreacion = Fecha.Hoy;
                 producto.FechaModificacion = Fecha.Hoy;
                 var respuesta = servicio.Add(producto);
@@ -40,7 +42,7 @@ namespace H.API.PRINCIPAL.Controllers
         {
             try
             {
-                var servicio = new TortaService(unitOfWork);
+                var servicio = new TortaService(unitOfWork, _cloudinaryService);
                 producto.FechaModificacion = Fecha.Hoy;
                 var respuesta = servicio.Update(producto);
                 return Ok(respuesta);
@@ -56,7 +58,7 @@ namespace H.API.PRINCIPAL.Controllers
         {
             try
             {
-                var servicio = new TortaService(unitOfWork);
+                var servicio = new TortaService(unitOfWork, _cloudinaryService);
                 var respuesta = servicio.Delete(id, usuario);
                 return Ok(respuesta);
             }
@@ -71,7 +73,7 @@ namespace H.API.PRINCIPAL.Controllers
         {
             try
             {
-                var servicio = new TortaService(unitOfWork);
+                var servicio = new TortaService(unitOfWork, _cloudinaryService);
                 return Ok(servicio.GetById(id));
             }
             catch (Exception ex)
@@ -85,8 +87,25 @@ namespace H.API.PRINCIPAL.Controllers
         {
             try
             {
-                var servicio = new TortaService(unitOfWork);
+                var servicio = new TortaService(unitOfWork, _cloudinaryService);
                 return Ok(servicio.ObtenerCombo());
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult(ex, User);
+            }
+        }
+
+        [HttpPost("InsertarConImagen")]
+        public async Task<IActionResult> InsertarConImagen([FromForm] Torta producto, IFormFile? imagen)
+        {
+            try
+            {
+                var servicio = new TortaService(unitOfWork, _cloudinaryService);
+                producto.FechaCreacion = Fecha.Hoy;
+                producto.FechaModificacion = Fecha.Hoy;
+                var respuesta = await servicio.AddAsync(producto, imagen);
+                return Ok(respuesta);
             }
             catch (Exception ex)
             {

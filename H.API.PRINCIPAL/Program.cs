@@ -3,8 +3,9 @@ using H.DataAccess.Infrastructure;
 using H.DataAccess.Repositorios;
 using H.DataAccess.UnitofWork;
 using H.Services;
-using Microsoft.EntityFrameworkCore;
+using H.Services.Configuration;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
@@ -35,12 +36,12 @@ builder.Services.AddScoped<H.DataAccess.Infrastructure.IConnectionFactory>(
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // ============================================
-// REPOSITORIOS - ESTO FALTABA
+// REPOSITORIOS
 // ============================================
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 
 // ============================================
-// SERVICIOS - ESTO FALTABA
+// SERVICIOS
 // ============================================
 builder.Services.AddScoped<IAuthService, AuthService>();
 
@@ -49,6 +50,12 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 // ============================================
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+
+// Configuración de Cloudinary
+builder.Services.Configure<CloudinarySettings>(
+    builder.Configuration.GetSection("Cloudinary"));
+
+builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 
 // ============================================
 // JWT AUTHENTICATION

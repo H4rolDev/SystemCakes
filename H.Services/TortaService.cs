@@ -3,6 +3,7 @@ using H.DataAccess.Enums;
 using H.DataAccess.Log;
 using H.DataAccess.UnitofWork;
 using H.DTOs;
+using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 
 namespace H.Services
@@ -10,10 +11,14 @@ namespace H.Services
     public class TortaService: ITortaService
     {
         private IUnitOfWork _unitOfWork;
-        public TortaService(IUnitOfWork unitOfWork)
+        private readonly ICloudinaryService _cloudinaryService;
+
+        public TortaService(IUnitOfWork unitOfWork, ICloudinaryService cloudinaryService)
         {
             _unitOfWork = unitOfWork;
+            _cloudinaryService = cloudinaryService;
         }
+
         public int Add(Torta entidad)
         {
             try
@@ -117,6 +122,61 @@ namespace H.Services
 
                 LogErp.EscribirBaseDatos(error);
                 throw ex;
+            }
+        }
+
+        public async Task<int> AddAsync(Torta entidad, IFormFile? imagen)
+        {
+            try
+            {
+                if (imagen != null && imagen.Length > 0)
+                {
+                    var url = await _cloudinaryService.SubirImagenAsync(imagen, "tortas");
+                    entidad.ImagenUrl = url;
+                    entidad.ImagenPublicId = ExtraerPublicId(url);
+                }
+
+                var modelo = _unitOfWork.TortaRepository.Add(entidad);
+                _unitOfWork.Commit();
+                return modelo.Id;
+            }
+            catch (Exception ex)
+            {
+                var error = new Error();
+                error.Message = "TortaService" + ex.Message;
+                error.Exception = ex;
+                error.Operation = "AddAsync";
+                error.Code = TiposError.NoInsertado;
+                error.Objeto = JsonConvert.SerializeObject(entidad);
+                LogErp.EscribirBaseDatos(error);
+                throw;
+            }
+        }
+
+        private string ExtraerPublicId(string url)
+        {
+            try
+            {
+                var uri = new Uri(url);
+                var segmentos = uri.AbsolutePath.Split('/');
+                // Buscamos el índice después de "upload"
+                var idxUpload = Array.IndexOf(segmentos, "upload");
+                if (idxUpload < 0) return string.Empty;
+
+                // Saltamos el segmento de versión (v123456) si existe
+                var inicio = idxUpload + 1;
+                if (inicio < segmentos.Length && segmentos[inicio].StartsWith("v")
+                    && int.TryParse(segmentos[inicio][1..], out _))
+                    inicio++;
+
+                var publicIdConExtension = string.Join("/", segmentos[inicio..]);
+                // Quitamos la extensión
+                var puntoIdx = publicIdConExtension.LastIndexOf('.');
+                return puntoIdx >= 0 ? publicIdConExtension[..puntoIdx] : publicIdConExtension;
+            }
+            catch
+            {
+                return string.Empty;
             }
         }
     }

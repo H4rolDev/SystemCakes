@@ -29,6 +29,8 @@ namespace H.DataAccess.Models
         /// Descripcion de la categoria.
         /// </summary>
         public decimal StockDisponible { get; set; }
+        public string? ImagenUrl { get; set; }
+        public string? ImagenPublicId { get; set; }
         /// <summary>
         /// Estado del registro
         /// </summary>
