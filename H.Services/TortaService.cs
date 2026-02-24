@@ -159,24 +159,50 @@ namespace H.Services
             {
                 var uri = new Uri(url);
                 var segmentos = uri.AbsolutePath.Split('/');
-                // Buscamos el índice después de "upload"
                 var idxUpload = Array.IndexOf(segmentos, "upload");
                 if (idxUpload < 0) return string.Empty;
 
-                // Saltamos el segmento de versión (v123456) si existe
                 var inicio = idxUpload + 1;
                 if (inicio < segmentos.Length && segmentos[inicio].StartsWith("v")
                     && int.TryParse(segmentos[inicio][1..], out _))
                     inicio++;
 
                 var publicIdConExtension = string.Join("/", segmentos[inicio..]);
-                // Quitamos la extensión
                 var puntoIdx = publicIdConExtension.LastIndexOf('.');
                 return puntoIdx >= 0 ? publicIdConExtension[..puntoIdx] : publicIdConExtension;
             }
             catch
             {
                 return string.Empty;
+            }
+        }
+
+        public async Task<int> UpdateAsync(Torta entidad, IFormFile? imagen)
+        {
+            try
+            {
+                if (imagen != null && imagen.Length > 0)
+                {
+                    var url = await _cloudinaryService.SubirImagenAsync(imagen, "tortas");
+                    entidad.ImagenUrl = url;
+                    entidad.ImagenPublicId = ExtraerPublicId(url);
+                }
+                // Si no hay imagen nueva, conserva la que ya tiene el objeto
+
+                var modelo = _unitOfWork.TortaRepository.Update(entidad);
+                _unitOfWork.Commit();
+                return modelo.Id;
+            }
+            catch (Exception ex)
+            {
+                var error = new Error();
+                error.Message = "TortaService" + ex.Message;
+                error.Exception = ex;
+                error.Operation = "UpdateAsync";
+                error.Code = TiposError.NoActualizado;
+                error.Objeto = JsonConvert.SerializeObject(entidad);
+                LogErp.EscribirBaseDatos(error);
+                throw;
             }
         }
     }

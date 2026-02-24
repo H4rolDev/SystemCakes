@@ -351,6 +351,12 @@ public partial class sistemContext : DbContext
                 .HasMaxLength(50)
                 .IsUnicode(false)
                 .HasComment("");
+            entity.Property(e => e.ImagenUrl)
+                .HasMaxLength(500)
+                .HasComment("URL de la imagen en Cloudinary");
+            entity.Property(e => e.ImagenPublicId)
+                .HasMaxLength(200)
+                .HasComment("Public ID de Cloudinary para eliminar");
             entity.Property(e => e.PrecioVenta)
                 .HasPrecision(18, 2)
                 .HasComment("Costo unitario del producto");

@@ -112,5 +112,21 @@ namespace H.API.PRINCIPAL.Controllers
                 return new ErrorResult(ex, User);
             }
         }
+
+        [HttpPut("ModificarConImagen")]
+        public async Task<IActionResult> ModificarConImagen([FromForm] Torta producto, IFormFile? imagen)
+        {
+            try
+            {
+                var servicio = new TortaService(unitOfWork, _cloudinaryService);
+                producto.FechaModificacion = Fecha.Hoy;
+                var respuesta = await servicio.UpdateAsync(producto, imagen);
+                return Ok(respuesta); 
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult(ex, User);
+            }
+        }
     }
 }

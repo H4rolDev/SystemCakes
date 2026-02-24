@@ -1,5 +1,6 @@
 ﻿using H.DataAccess.Entidades;
 using H.DTOs;
+using Microsoft.AspNetCore.Http;
 
 namespace H.Services
 {
@@ -10,5 +11,6 @@ namespace H.Services
         int Delete(int id, string usuario);
         Torta GetById(int id);
         IEnumerable<TortaListadoDTO> ObtenerCombo();
+        Task<int> UpdateAsync(Torta entidad, IFormFile? imagen);
     }
 }

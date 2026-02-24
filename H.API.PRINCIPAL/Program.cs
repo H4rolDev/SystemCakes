@@ -53,7 +53,7 @@ builder.Services.AddEndpointsApiExplorer();
 
 // Configuración de Cloudinary
 builder.Services.Configure<CloudinarySettings>(
-    builder.Configuration.GetSection("Cloudinary"));
+builder.Configuration.GetSection("Cloudinary"));
 
 builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 
