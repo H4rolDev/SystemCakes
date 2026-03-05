@@ -7,18 +7,18 @@ using System.Threading.Tasks;
 
 namespace H.DataAccess.Models
 {
-    public partial class TRol
+    public partial class TUnidadMedida
     {
         /// <summary>
         /// Identificador de registro.
         /// </summary>
         public int Id { get; set; }
         /// <summary>
-        /// Nombre del rol.
+        /// Nombre de categoria de la torta.
         /// </summary>
         public string Nombre { get; set; } = null!;
         /// <summary>
-        /// Estado del registro.
+        /// Estado del registro
         /// </summary>
         public bool Activo { get; set; }
         /// <summary>
@@ -28,7 +28,7 @@ namespace H.DataAccess.Models
         /// <summary>
         /// Usuario de modificación del registro
         /// </summary>
-        public string? UsuarioModificacion { get; set; } = null!;
+        public string UsuarioModificacion { get; set; } = null!;
         /// <summary>
         /// Fecha de creación del registro
         /// </summary>
@@ -36,6 +36,6 @@ namespace H.DataAccess.Models
         /// <summary>
         /// Fecha de modificación del registro
         /// </summary>
-        public DateTime? FechaModificacion { get; set; }
+        public DateTime FechaModificacion { get; set; }
     }
 }

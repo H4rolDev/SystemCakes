@@ -63,16 +63,16 @@ namespace H.DataAccess.Repositorios
         {
             try
             {
-                var entidad = FirstBy(w => w.Id == id && w.Estado == true);
+                var entidad = FirstBy(w => w.Id == id && w.Activo == true);
                 if (entidad == null)
                     throw new ArgumentNullException($"La Entidad id: {id}, es nula y/o ya fue eliminada");
                 if (string.IsNullOrEmpty(usuario) || (usuario != null && usuario.Trim() == ""))
                     throw new ArgumentNullException("El nombre de usuario es nulo y/o no se proporcionó");
 
-                if ((bool)typeof(TEntity).GetProperty("Estado").GetValue(entidad) == false)
+                if ((bool)typeof(TEntity).GetProperty("Activo").GetValue(entidad) == false)
                     throw new ArgumentNullException($"Elemento id: {id}, ya fue eliminado previamente");
 
-                typeof(TEntity).GetProperty("Estado").SetValue(entidad, false);
+                typeof(TEntity).GetProperty("Activo").SetValue(entidad, false);
                 typeof(TEntity).GetProperty("UsuarioModificacion").SetValue(entidad, usuario);
                 typeof(TEntity).GetProperty("FechaModificacion").SetValue(entidad, DateTime.UtcNow.AddHours(-5));
 
@@ -150,7 +150,7 @@ namespace H.DataAccess.Repositorios
         {
             try
             {
-                return entities.AsNoTracking().Where(w => w.Estado == true).Where(filter).ToList();
+                return entities.AsNoTracking().Where(w => w.Activo == true).Where(filter).ToList();
             }
             catch (Exception ex)
             {
@@ -158,7 +158,7 @@ namespace H.DataAccess.Repositorios
             }
         }
 
-		public IEnumerable<TEntity> GetBySinEstado(Expression<Func<TEntity, bool>> filter)
+		public IEnumerable<TEntity> GetBySinActivo(Expression<Func<TEntity, bool>> filter)
 		{
 			try
 			{
@@ -174,7 +174,7 @@ namespace H.DataAccess.Repositorios
         {
             try
             {
-                return entities.AsNoTracking().Where(w => w.Estado == true).Where(where).Select(select).ToList();
+                return entities.AsNoTracking().Where(w => w.Activo == true).Where(where).Select(select).ToList();
             }
             catch (Exception ex)
             {
@@ -186,7 +186,7 @@ namespace H.DataAccess.Repositorios
         {
             try
             {
-                return entities.Any(w => w.Id == id && w.Estado == true);
+                return entities.Any(w => w.Id == id && w.Activo == true);
             }
             catch (Exception ex)
             {
@@ -198,7 +198,7 @@ namespace H.DataAccess.Repositorios
         {
             try
             {
-                return entities.Where(w => w.Estado == true).Where(filter).Any();
+                return entities.Where(w => w.Activo == true).Where(filter).Any();
             }
             catch (Exception ex)
             {
@@ -211,7 +211,7 @@ namespace H.DataAccess.Repositorios
         {
 			try
 			{
-				return entities.Where(w => w.Estado == true);
+				return entities.Where(w => w.Activo == true);
 			}
 			catch (Exception ex)
 			{
@@ -236,7 +236,7 @@ namespace H.DataAccess.Repositorios
                 if (!Exist(id))
                     throw new Exception($"La entidad con Id {id} de {typeof(TEntity)} no existe");
 
-                TEntity entidad = entities.AsNoTracking().FirstOrDefault(w => w.Id == id && w.Estado == true);
+                TEntity entidad = entities.AsNoTracking().FirstOrDefault(w => w.Id == id && w.Activo == true);
 
                 return entidad;
             }
@@ -252,7 +252,7 @@ namespace H.DataAccess.Repositorios
                 if (listadoId == null || listadoId.Count == 0)
                     throw new Exception($"No se envió ids para buscar");
 
-                return entities.AsNoTracking().Where(w => w.Estado == true).Where(w => listadoId.Contains(w.Id)).ToList();
+                return entities.AsNoTracking().Where(w => w.Activo == true).Where(w => listadoId.Contains(w.Id)).ToList();
             }
             catch (Exception ex)
             {
@@ -264,7 +264,7 @@ namespace H.DataAccess.Repositorios
         {
             try
             {
-                return entities.AsNoTracking().Where(w => w.Estado == true).Where(filter).FirstOrDefault();
+                return entities.AsNoTracking().Where(w => w.Activo == true).Where(filter).FirstOrDefault();
             }
             catch (Exception ex)
             {
@@ -277,7 +277,7 @@ namespace H.DataAccess.Repositorios
         {
             try
             {
-                return entities.AsNoTracking().Where(w => w.Estado == true).Where(where).Select(select).FirstOrDefault();
+                return entities.AsNoTracking().Where(w => w.Activo == true).Where(where).Select(select).FirstOrDefault();
             }
             catch (Exception ex)
             {

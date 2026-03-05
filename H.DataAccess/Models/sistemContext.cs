@@ -1,4 +1,5 @@
 ﻿using System;
+using H.DataAccess.Entidades;
 using H.DataAccess.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,520 +15,543 @@ public partial class sistemContext : DbContext
         : base(options)
     {
     }
-    public virtual DbSet<TProducto> TProducto { get; set; }
-    public virtual DbSet<TCategoria> TCategoria { get; set; }
-    public virtual DbSet<TCliente> TCliente { get; set; }
     public virtual DbSet<TRol> TRol { get; set; }
     public virtual DbSet<TPersona> TPersona { get; set; }
     public virtual DbSet<TUsuario> TUsuario { get; set; }
     public virtual DbSet<TUsuarioRol> TUsuarioRol { get; set; }
-    public virtual DbSet<TTipoUsuario> TTipoUsuario { get; set; }
-    public virtual DbSet<TCompra> TCompra { get; set; }
-    public virtual DbSet<TCompraDetalle> TCompraDetalle { get; set; }
-    public virtual DbSet<TRecetaTorta> TRecetaTorta { get; set; }
+    //public virtual DbSet<TCargo> TCargo { get; set; }
+    //public virtual DbSet<TPersonal> TPersonal { get; set; }
+    public virtual DbSet<TCategoriaTorta> TCategoriaTorta { get; set; }
+    public virtual DbSet<TTorta> TTorta { get; set; }
+    public virtual DbSet<TTortaImagen> TTortaImagen { get; set; }
+    public virtual DbSet<TTortaLote> TTortaLote { get; set; }
+    //public virtual DbSet<TUnidadMedida> TUnidadMedida { get; set; }
+    public virtual DbSet<TInsumo> TInsumo { get; set; }
+    //public virtual DbSet<TInsumoLote> TInsumoLote { get; set; }
+    //public virtual DbSet<TTipoMovimiento> TTipoMovimiento { get; set; }
+    //public virtual DbSet<TMovimientoInsumo> TMovimientoInsumo { get; set; }
+    //public virtual DbSet<TMovimientoTorta> TMovimientoTorta { get; set; }
     public virtual DbSet<TProduccion> TProduccion { get; set; }
+    //public virtual DbSet<TProduccionDetalleInsumo> TProduccionDetalleInsumo { get; set; }
+    //public virtual DbSet<TEstadoVenta> TEstadoVenta { get; set; }
+    //public virtual DbSet<TTipoEntrega> TTipoEntrega { get; set; }
+    //public virtual DbSet<TVenta> TVenta { get; set; }
+    //public virtual DbSet<TVentaDetalle> TVentaDetalle { get; set; }
+    //public virtual DbSet<TMetodoPago> TMetodoPago { get; set; }
+    //public virtual DbSet<TPagoVenta> TPagoVenta { get; set; }
+    //public virtual DbSet<TEstadoEntrega> TEstadoEntrega { get; set; }
+    //public virtual DbSet<TEntregaDelivery> TEntregaDelivery { get; set; }
+    //public virtual DbSet<TTipoComprobante> TTipoComprobante { get; set; }
+    //public virtual DbSet<TComprobanteVenta> TComprobanteVenta { get; set; }
+    //public virtual DbSet<TCancelacionVenta> TCancelacionVenta { get; set; }
+    //public virtual DbSet<TPromocion> TPromocion { get; set; }
+    //public virtual DbSet<TPromocionTorta> TPromocionTorta { get; set; }
+    public virtual DbSet<TRecetaTorta> TRecetaTorta { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        base.OnModelCreating(modelBuilder);
 
-        modelBuilder.Entity<TProducto>(entity =>
+        // =========================================================
+        // CONFIGURACIÓN GLOBAL DE AUDITORÍA
+        // =========================================================
+
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
-            entity.ToTable("TProducto");
+            if (typeof(BaseEntity).IsAssignableFrom(entityType.ClrType))
+            {
+                modelBuilder.Entity(entityType.ClrType).Property<DateTime>("FechaCreacion")
+                    .HasColumnType("datetime")
+                    .IsRequired();
 
-            entity.Property(e => e.Id).HasComment("Identificador de registro");
+                modelBuilder.Entity(entityType.ClrType).Property<int>("UsuarioCreacion")
+                    .IsRequired();
 
-            entity.Property(e => e.IdCategoria).HasComment("Identificador de categoria del registro");
+                modelBuilder.Entity(entityType.ClrType).Property<DateTime?>("FechaModificacion")
+                    .HasColumnType("datetime");
 
-            entity.Property(e => e.Nombre).HasComment("Nombre del producto");
+                modelBuilder.Entity(entityType.ClrType).Property<int?>("UsuarioModificacion");
 
-            entity.Property(e => e.Descripcion).HasComment("Descripcion del producto");
+                modelBuilder.Entity(entityType.ClrType).Property<bool>("Activo")
+                    .HasDefaultValue(true)
+                    .IsRequired();
+            }
+        }
 
-            entity.Property(e => e.Stock).HasComment("Stock del producto");
-
-            entity.Property(e => e.FechaVencimiento)
-                .HasColumnType("datetime")
-                .HasComment("Fecha de vencimiento del producto");
-
-            entity.Property(e => e.CostoUnitario)
-                .HasPrecision(18, 2)
-                .HasComment("Costo unitario del producto");
-
-            entity.Property(e => e.CostoTotal)
-                .HasPrecision(18, 2)
-                .HasComment("Costo total del producto");
-
-            entity.Property(e => e.Igv)
-                .HasPrecision(18, 2)
-                .HasComment("Igv del producto");
-
-            entity.Property(e => e.Estado).HasComment("Estado del registro");
-
-            entity.Property(e => e.FechaCreacion)
-                .HasColumnType("datetime")
-                .HasComment("Fecha de creación del registro");
-
-            entity.Property(e => e.FechaModificacion)
-                .HasColumnType("datetime")
-                .HasComment("Fecha de modificación del registro");
-
-            entity.Property(e => e.UsuarioCreacion)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasComment("Usuario de creación del registro");
-
-            entity.Property(e => e.UsuarioModificacion)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasComment("Usuario de modificación del registro");
-        });
-
-        modelBuilder.Entity<TCategoria>(entity =>
-        {
-            entity.ToTable("TCategoria");
-
-            entity.Property(e => e.Id).HasComment("Identificador de registro");
-
-            entity.Property(e => e.Nombre)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasComment("");
-
-            entity.Property(e => e.Descripcion)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasComment("");
-
-            entity.Property(e => e.Estado).HasComment("Estado del registro");
-
-            entity.Property(e => e.FechaCreacion)
-                .HasColumnType("datetime")
-                .HasComment("Fecha de creación del registro");
-
-            entity.Property(e => e.FechaModificacion)
-                .HasColumnType("datetime")
-                .HasComment("Fecha de modificación del registro");
-
-            entity.Property(e => e.UsuarioCreacion)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasComment("Usuario de creación del registro");
-
-            entity.Property(e => e.UsuarioModificacion)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasComment("Usuario de modificación del registro");
-        });
-
-        modelBuilder.Entity<TCliente>(entity =>
-        {
-            entity.ToTable("TCliente");
-
-            entity.Property(e => e.Id).HasComment("Identificador de registro");
-
-            entity.Property(e => e.TipoDocumento)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasComment("");
-
-            entity.Property(e => e.NumeroDocumento)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasComment("");
-
-            entity.Property(e => e.NombresPersona)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasComment("");
-
-            entity.Property(e => e.ApellidosPersona)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasComment("");
-
-            entity.Property(e => e.RazonSocial)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasComment("");
-
-            entity.Property(e => e.Estado).HasComment("Estado del registro");
-
-            entity.Property(e => e.FechaCreacion)
-                .HasColumnType("datetime")
-                .HasComment("Fecha de creación del registro");
-
-            entity.Property(e => e.FechaModificacion)
-                .HasColumnType("datetime")
-                .HasComment("Fecha de modificación del registro");
-
-            entity.Property(e => e.UsuarioCreacion)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasComment("Usuario de creación del registro");
-
-            entity.Property(e => e.UsuarioModificacion)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasComment("Usuario de modificación del registro");
-        });
+        // =========================================================
+        // SEGURIDAD
+        // =========================================================
 
         modelBuilder.Entity<TRol>(entity =>
         {
             entity.ToTable("TRol");
-
-            entity.Property(e => e.Id).HasComment("Identificador de registro");
-
-            entity.Property(e => e.Nombre)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasComment("");
-
-            entity.Property(e => e.Estado).HasComment("Estado del registro");
-
-            entity.Property(e => e.FechaCreacion)
-                .HasColumnType("datetime")
-                .HasComment("Fecha de creación del registro");
-
-            entity.Property(e => e.FechaModificacion)
-                .HasColumnType("datetime")
-                .HasComment("Fecha de modificación del registro");
-
-            entity.Property(e => e.UsuarioCreacion)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasComment("Usuario de creación del registro");
-
-            entity.Property(e => e.UsuarioModificacion)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasComment("Usuario de modificación del registro");
+            entity.Property(e => e.Nombre).HasMaxLength(100).IsRequired();
         });
 
         modelBuilder.Entity<TPersona>(entity =>
         {
             entity.ToTable("TPersona");
 
-            entity.Property(e => e.Id).HasComment("Identificador de registro");
-            entity.Property(e => e.IdUsuario).HasComment("Identificador de usuario");
-
             entity.Property(e => e.Nombres)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasComment("");
+                .HasMaxLength(150);
 
             entity.Property(e => e.ApellidoMaterno)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasComment("");
+                .HasMaxLength(150);
 
-            entity.Property(e => e.Estado).HasComment("Estado del registro");
+            entity.Property(e => e.ApellidoPaterno)
+                .HasMaxLength(150);
 
-            entity.Property(e => e.FechaCreacion)
-                .HasColumnType("datetime")
-                .HasComment("Fecha de creación del registro");
+            entity.Property(e => e.NumeroDocumento)
+                .HasMaxLength(20)
+                .IsRequired();
 
-            entity.Property(e => e.FechaModificacion)
-                .HasColumnType("datetime")
-                .HasComment("Fecha de modificación del registro");
+            entity.Property(e => e.RazonSocial)
+                .HasMaxLength(250)
+                .IsRequired(false);
 
-            entity.Property(e => e.UsuarioCreacion)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasComment("Usuario de creación del registro");
+            entity.Property(e => e.Telefono)
+                .HasMaxLength(20);
 
-            entity.Property(e => e.UsuarioModificacion)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasComment("Usuario de modificación del registro");
+            entity.Property(e => e.Direccion)
+                .HasMaxLength(300);
+
+            entity.Property(e => e.Email)
+                .HasMaxLength(150);
+
+            entity.HasOne<TTipoDocumento>()
+                .WithMany()
+                .HasForeignKey(e => e.IdTipoDocumento)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<TUsuario>(entity =>
         {
             entity.ToTable("TUsuario");
-            entity.Property(e => e.Id).HasComment("Identificador de registro");
-            entity.Property(e => e.IdTipoUsuario).HasComment("Tipo de usuario");
-            entity.Property(e => e.Username)
-                .HasMaxLength(100)
-                .IsUnicode(false)
-                .HasComment("Nombre de usuario");
-            entity.Property(e => e.PasswordHash)
-                .HasMaxLength(255)
-                .HasComment("Hash de contraseña");
-            entity.Property(e => e.PasswordSalt)
-                .HasMaxLength(255)
-                .HasComment("Salt de contraseña");
-            entity.Property(e => e.Estado).HasComment("Estado del registro");
-            entity.Property(e => e.FechaCreacion)
-                .HasColumnType("datetime")
-                .HasComment("Fecha de creación del registro");
-            entity.Property(e => e.FechaModificacion)
-                .HasColumnType("datetime")
-                .HasComment("Fecha de modificación del registro");
-            entity.Property(e => e.UsuarioCreacion)
-                .HasMaxLength(100)
-                .HasComment("Usuario de creación del registro");
-            entity.Property(e => e.UsuarioModificacion)
-                .HasMaxLength(100)
-                .HasComment("Usuario de modificación del registro");
+            entity.Property(e => e.Username).HasMaxLength(100).IsRequired();
+            entity.Property(e => e.PasswordHash).HasMaxLength(300).IsRequired();
+
+            entity.HasOne<TPersona>()
+                .WithMany()
+                .HasForeignKey(e => e.IdPersona)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<TUsuarioRol>(entity =>
         {
             entity.ToTable("TUsuarioRol");
-            entity.Property(e => e.Id).HasComment("Identificador de registro");
-            entity.Property(e => e.IdUsuario).HasComment("Id de usuario");
-            entity.Property(e => e.IdRol).HasComment("Id de rol");
-            entity.Property(e => e.Estado).HasComment("Estado del registro");
-            entity.Property(e => e.FechaCreacion)
-                .HasColumnType("datetime")
-                .HasComment("Fecha de creación del registro");
-            entity.Property(e => e.FechaModificacion)
-                .HasColumnType("datetime")
-                .HasComment("Fecha de modificación del registro");
-            entity.Property(e => e.UsuarioCreacion)
-                .HasMaxLength(100)
-                .HasComment("Usuario de creación del registro");
-            entity.Property(e => e.UsuarioModificacion)
-                .HasMaxLength(100)
-                .HasComment("Usuario de modificación del registro");
+
+            entity.HasOne<TUsuario>()
+                .WithMany()
+                .HasForeignKey(e => e.IdUsuario)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<TRol>()
+                .WithMany()
+                .HasForeignKey(e => e.IdRol)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
-        modelBuilder.Entity<TTipoUsuario>(entity =>
+        // =========================================================
+        // PERSONAL
+        // =========================================================
+
+        /*modelBuilder.Entity<TCargo>(entity =>
         {
-            entity.HasKey(e => e.Id);
-            entity.ToTable("TTipoUsuario");
-            entity.Property(e => e.Nombre)
-                .HasMaxLength(100)
-                .IsUnicode(false);
-            entity.Property(e => e.Estado).HasComment("Estado del registro");
-            entity.Property(e => e.FechaCreacion)
-                .HasColumnType("datetime")
-                .HasComment("Fecha de creación del registro");
-            entity.Property(e => e.FechaModificacion)
-                .HasColumnType("datetime")
-                .HasComment("Fecha de modificación del registro");
-            entity.Property(e => e.UsuarioCreacion)
-                .HasMaxLength(100)
-                .HasComment("Usuario de creación del registro");
-            entity.Property(e => e.UsuarioModificacion)
-                .HasMaxLength(100)
-                .HasComment("Usuario de modificación del registro");
+            entity.ToTable("TCargo");
+            entity.Property(e => e.Nombre).HasMaxLength(100).IsRequired();
         });
 
-        modelBuilder.Entity<TPersona>(entity =>
+        modelBuilder.Entity<TPersonal>(entity =>
         {
-            entity.ToTable("TPersona");
-            entity.Property(e => e.Id).HasComment("Identificador de registro");
-            entity.Property(e => e.IdUsuario).HasComment("Identificador de usuario");
-            entity.Property(e => e.TipoDocumento)
-                .HasMaxLength(50);
-            entity.Property(e => e.NumeroDocumento)
-                .HasMaxLength(50);
-            entity.Property(e => e.RazonSocial)
-                .HasMaxLength(255);
-            entity.Property(e => e.ApellidoPaterno)
-                .HasMaxLength(255);
-            entity.Property(e => e.Estado).HasComment("Estado del registro");
-            entity.Property(e => e.FechaCreacion)
-                .HasColumnType("datetime")
-                .HasComment("Fecha de creación del registro");
-            entity.Property(e => e.FechaModificacion)
-                .HasColumnType("datetime")
-                .HasComment("Fecha de modificación del registro");
-            entity.Property(e => e.UsuarioCreacion)
-                .HasMaxLength(100)
-                .HasComment("Usuario de creación del registro");
-            entity.Property(e => e.UsuarioModificacion)
-                .HasMaxLength(100)
-                .HasComment("Usuario de modificación del registro");
+            entity.ToTable("TPersonal");
+
+            entity.HasOne<TPersona>()
+                .WithMany()
+                .HasForeignKey(e => e.IdPersona)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<TCargo>()
+                .WithMany()
+                .HasForeignKey(e => e.IdCargo)
+                .OnDelete(DeleteBehavior.Restrict);
+        });*/
+
+        // =========================================================
+        // TORTAS
+        // =========================================================
+
+        modelBuilder.Entity<TCategoriaTorta>(entity =>
+        {
+            entity.ToTable("TCategoriaTorta");
+            entity.Property(e => e.Nombre).HasMaxLength(100).IsRequired();
         });
 
         modelBuilder.Entity<TTorta>(entity =>
         {
-            entity.HasKey(e => e.Id);
             entity.ToTable("TTorta");
-            entity.Property(e => e.Nombre)
-                .HasMaxLength(100)
-                .IsUnicode(false);
-            entity.Property(e => e.Descripcion)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasComment("");
-            entity.Property(e => e.ImagenUrl)
-                .HasMaxLength(500)
-                .HasComment("URL de la imagen en Cloudinary");
-            entity.Property(e => e.ImagenPublicId)
-                .HasMaxLength(200)
-                .HasComment("Public ID de Cloudinary para eliminar");
-            entity.Property(e => e.PrecioVenta)
-                .HasPrecision(18, 2)
-                .HasComment("Costo unitario del producto");
-            entity.Property(e => e.StockDisponible).HasComment("Stock del producto");
-            entity.Property(e => e.Estado).HasComment("Estado del registro");
-            entity.Property(e => e.FechaCreacion)
-                .HasColumnType("datetime")
-                .HasComment("Fecha de creación del registro");
-            entity.Property(e => e.FechaModificacion)
-                .HasColumnType("datetime")
-                .HasComment("Fecha de modificación del registro");
-            entity.Property(e => e.UsuarioCreacion)
-                .HasMaxLength(100)
-                .HasComment("Usuario de creación del registro");
-            entity.Property(e => e.UsuarioModificacion)
-                .HasMaxLength(100)
-                .HasComment("Usuario de modificación del registro");
+
+            entity.Property(e => e.Nombre).HasMaxLength(150).IsRequired();
+            entity.Property(e => e.Descripcion).HasMaxLength(500);
+            entity.Property(e => e.Cantidades).HasMaxLength(150);
+            entity.Property(e => e.PrecioVenta).HasPrecision(10, 2).IsRequired();
+
+            entity.HasOne<TCategoriaTorta>()
+                .WithMany()
+                .HasForeignKey(e => e.IdCategoriaTorta)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<TTortaImagen>(entity =>
+        {
+            entity.ToTable("TTortaImagen");
+
+            entity.Property(e => e.ImagenUrl).HasMaxLength(500).IsRequired();
+            entity.Property(e => e.ImagenPublicId).HasMaxLength(200);
+
+            entity.HasOne<TTorta>()
+                .WithMany()
+                .HasForeignKey(e => e.IdTorta)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<TTortaLote>(entity =>
+        {
+            entity.ToTable("TTortaLote");
+
+            entity.Property(e => e.CantidadDisponible).HasPrecision(10, 2).IsRequired();
+            entity.Property(e => e.FechaProduccion).HasColumnType("datetime").IsRequired();
+            entity.Property(e => e.FechaVencimiento).HasColumnType("datetime").IsRequired();
+
+            entity.HasOne<TTorta>()
+                .WithMany()
+                .HasForeignKey(e => e.IdTorta)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<TProduccion>()
+                .WithMany()
+                .HasForeignKey(e => e.IdProduccion)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // =========================================================
+        // INSUMOS
+        // =========================================================
+
+        modelBuilder.Entity<TUnidadMedida>(entity =>
+        {
+            entity.ToTable("TUnidadMedida");
+            entity.Property(e => e.Nombre).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.Abreviatura).HasMaxLength(10).IsRequired();
         });
 
         modelBuilder.Entity<TInsumo>(entity =>
         {
-            entity.HasKey(e => e.Id);
             entity.ToTable("TInsumo");
-            entity.Property(e => e.Nombre)
-                .HasMaxLength(100)
-                .IsUnicode(false);
-            entity.Property(e => e.UnidadMedida).HasComment("Unidad de medida");
-            entity.Property(e => e.StockActual).HasComment("Stock actual");
-            entity.Property(e => e.StockMinimo).HasComment("Stock minimo");
-            entity.Property(e => e.CostoUnitario).HasComment("Costo unitario");
-            entity.Property(e => e.Estado).HasComment("Estado del registro");
-            entity.Property(e => e.FechaCreacion)
-                .HasColumnType("datetime")
-                .HasComment("Fecha de creación del registro");
-            entity.Property(e => e.FechaModificacion)
-                .HasColumnType("datetime")
-                .HasComment("Fecha de modificación del registro");
-            entity.Property(e => e.UsuarioCreacion)
-                .HasMaxLength(100)
-                .HasComment("Usuario de creación del registro");
-            entity.Property(e => e.UsuarioModificacion)
-                .HasMaxLength(100)
-                .HasComment("Usuario de modificación del registro");
-        });
 
-        modelBuilder.Entity<TCompra>(entity =>
-        {
-            entity.ToTable("TCompra");
-            entity.Property(e => e.Id).HasComment("Identificador de registro");
-            entity.Property(e => e.FechaCompra)
-                .HasColumnType("datetime")
-                .HasComment("Fecha realizo compra");
-            entity.Property(e => e.Total)
-                .HasPrecision(18, 2)
-                .HasComment("Total de venta");
-            entity.Property(e => e.Estado).HasComment("Estado del registro");
-            entity.Property(e => e.UsuarioCreacion)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasComment("Usuario de creación del registro");
-            entity.Property(e => e.UsuarioModificacion)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasComment("Usuario de modificación del registro");
-            entity.Property(e => e.FechaCreacion)
-                .HasColumnType("datetime")
-                .HasComment("Fecha de creación del registro");
-            entity.Property(e => e.FechaModificacion)
-                .HasColumnType("datetime")
-                .HasComment("Fecha de modificación del registro");
-        });
+            entity.Property(e => e.Nombre).HasMaxLength(150).IsRequired();
+            entity.Property(e => e.StockActual).HasPrecision(10, 2).IsRequired();
+            entity.Property(e => e.StockMinimo).HasPrecision(10, 2).IsRequired();
 
-        modelBuilder.Entity<TCompraDetalle>(entity =>
-        {
-            entity.ToTable("TCompraDetalle");
-            entity.Property(e => e.Id).HasComment("Identificador de registro");
-            entity.Property(e => e.IdCompra).HasComment("Identificador de la compra realizada");
-            entity.Property(e => e.IdInsumo).HasComment("Identificador del insumo");
-            entity.Property(e => e.Cantidad)
-                .HasPrecision(18, 2)
-                .HasComment("Cantidad de insumos comprados");
-            entity.Property(e => e.CostoUnitario)
-                .HasPrecision(18, 2)
-                .HasComment("Costo unitario de los insumos adquiridos");
-            entity.Property(e => e.Subtotal)
-                .HasPrecision(18, 2)
-                .HasComment("Subtotal de la compra");
-            entity.Property(e => e.Estado).HasComment("Estado del registro");
-            entity.Property(e => e.UsuarioCreacion)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasComment("Usuario de creación del registro");
-            entity.Property(e => e.UsuarioModificacion)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasComment("Usuario de modificación del registro");
-            entity.Property(e => e.FechaCreacion)
-                .HasColumnType("datetime")
-                .HasComment("Fecha de creación del registro");
-            entity.Property(e => e.FechaModificacion)
-                .HasColumnType("datetime")
-                .HasComment("Fecha de modificación del registro");
-
-            entity.HasOne<TCompra>()
+            entity.HasOne<TUnidadMedida>()
                 .WithMany()
-                .HasForeignKey(e => e.IdCompra);
+                .HasForeignKey(e => e.IdUnidadMedida)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        /*modelBuilder.Entity<TInsumoLote>(entity =>
+        {
+            entity.ToTable("TInsumoLote");
+
+            entity.Property(e => e.CantidadDisponible).HasPrecision(10, 2).IsRequired();
+            entity.Property(e => e.CostoUnitario).HasPrecision(10, 2).IsRequired();
+            entity.Property(e => e.FechaIngreso).HasColumnType("datetime").IsRequired();
+            entity.Property(e => e.FechaVencimiento).HasColumnType("datetime");
 
             entity.HasOne<TInsumo>()
                 .WithMany()
-                .HasForeignKey(e => e.IdInsumo);
+                .HasForeignKey(e => e.IdInsumo)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
-        modelBuilder.Entity<TRecetaTorta>(entity =>
+        modelBuilder.Entity<TTipoMovimiento>(entity =>
         {
-            entity.ToTable("TRecetaTorta");
-            entity.Property(e => e.Id).HasComment("Identificador de registro");
-            entity.Property(e => e.IdTorta).HasComment("Identificador de torta");
-            entity.Property(e => e.IdInsumo).HasComment("Identificador del insumo");
-            entity.Property(e => e.CantidadNecesaria).HasComment("Cantidad de insumos");
-            entity.Property(e => e.Estado).HasComment("Estado del registro");
-            entity.Property(e => e.UsuarioCreacion)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasComment("Usuario de creación del registro");
-            entity.Property(e => e.UsuarioModificacion)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasComment("Usuario de modificación del registro");
-            entity.Property(e => e.FechaCreacion)
-                .HasColumnType("datetime")
-                .HasComment("Fecha de creación del registro");
-            entity.Property(e => e.FechaModificacion)
-                .HasColumnType("datetime")
-                .HasComment("Fecha de modificación del registro");
-
-            entity.HasOne<TTorta>()
-                .WithMany()
-                .HasForeignKey(e => e.IdTorta);
-
-            entity.HasOne<TInsumo>()
-                .WithMany()
-                .HasForeignKey(e => e.IdInsumo);
+            entity.ToTable("TTipoMovimiento");
+            entity.Property(e => e.Nombre).HasMaxLength(100).IsRequired();
         });
+
+        modelBuilder.Entity<TMovimientoInsumo>(entity =>
+        {
+            entity.ToTable("TMovimientoInsumo");
+
+            entity.Property(e => e.Cantidad).HasPrecision(10, 2).IsRequired();
+            entity.Property(e => e.FechaMovimiento).HasColumnType("datetime").IsRequired();
+
+            entity.HasOne<TInsumoLote>()
+                .WithMany()
+                .HasForeignKey(e => e.IdInsumoLote)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<TTipoMovimiento>()
+                .WithMany()
+                .HasForeignKey(e => e.IdTipoMovimiento)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<TMovimientoTorta>(entity =>
+        {
+            entity.ToTable("TMovimientoTorta");
+
+            entity.Property(e => e.Cantidad).HasPrecision(10, 2).IsRequired();
+            entity.Property(e => e.FechaMovimiento).HasColumnType("datetime").IsRequired();
+
+            entity.HasOne<TTortaLote>()
+                .WithMany()
+                .HasForeignKey(e => e.IdTortaLote)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<TTipoMovimiento>()
+                .WithMany()
+                .HasForeignKey(e => e.IdTipoMovimiento)
+                .OnDelete(DeleteBehavior.Restrict);
+        });*/
+
+        // =========================================================
+        // PRODUCCIÓN
+        // =========================================================
 
         modelBuilder.Entity<TProduccion>(entity =>
         {
             entity.ToTable("TProduccion");
-            entity.Property(e => e.Id).HasComment("Identificador de registro");
-            entity.Property(e => e.IdTorta).HasComment("Identificador de torta");
-            entity.Property(e => e.Fecha).HasComment("Fecha de produccion");
-            entity.Property(e => e.CantidadProducida).HasComment("Cantidad de insumos");
-            entity.Property(e => e.Observacion).HasComment("Observacion de produccion");
-            entity.Property(e => e.Estado).HasComment("Estado del registro");
-            entity.Property(e => e.UsuarioCreacion)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasComment("Usuario de creación del registro");
-            entity.Property(e => e.UsuarioModificacion)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasComment("Usuario de modificación del registro");
-            entity.Property(e => e.FechaCreacion)
-                .HasColumnType("datetime")
-                .HasComment("Fecha de creación del registro");
-            entity.Property(e => e.FechaModificacion)
-                .HasColumnType("datetime")
-                .HasComment("Fecha de modificación del registro");
+
+            entity.Property(e => e.CantidadProducida).HasPrecision(10, 2).IsRequired();
+            entity.Property(e => e.FechaProduccion).HasColumnType("datetime").IsRequired();
 
             entity.HasOne<TTorta>()
                 .WithMany()
-                .HasForeignKey(e => e.IdTorta);
+                .HasForeignKey(e => e.IdTorta)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        /*modelBuilder.Entity<TProduccionDetalleInsumo>(entity =>
+        {
+            entity.ToTable("TProduccionDetalleInsumo");
+
+            entity.Property(e => e.CantidadUsada).HasPrecision(10, 2).IsRequired();
+
+            entity.HasOne<TProduccion>()
+                .WithMany()
+                .HasForeignKey(e => e.IdProduccion)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne<TInsumoLote>()
+                .WithMany()
+                .HasForeignKey(e => e.IdInsumoLote)
+                .OnDelete(DeleteBehavior.Restrict);
+        });*/
+
+        modelBuilder.Entity<TRecetaTorta>(entity =>
+        {
+            entity.ToTable("TRecetaTorta");
+
+            entity.Property(e => e.CantidadRequerida).HasPrecision(10, 2).IsRequired();
+
+            entity.HasIndex(e => new { e.IdTorta, e.IdInsumo }).IsUnique();
+
+            entity.HasOne<TTorta>()
+                .WithMany()
+                .HasForeignKey(e => e.IdTorta)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<TInsumo>()
+                .WithMany()
+                .HasForeignKey(e => e.IdInsumo)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // =========================================================
+        // VENTAS
+        // =========================================================
+
+        //modelBuilder.Entity<TEstadoVenta>(entity =>
+        //{
+        //    entity.ToTable("TEstadoVenta");
+        //    entity.Property(e => e.Nombre).HasMaxLength(100).IsRequired();
+        //});
+
+        //modelBuilder.Entity<TTipoEntrega>(entity =>
+        //{
+        //    entity.ToTable("TTipoEntrega");
+        //    entity.Property(e => e.Nombre).HasMaxLength(100).IsRequired();
+        //});
+
+        //modelBuilder.Entity<TVenta>(entity =>
+        //{
+        //    entity.ToTable("TVenta");
+
+        //    entity.Property(e => e.Total).HasPrecision(10, 2).IsRequired();
+        //    entity.Property(e => e.FechaVenta).HasColumnType("datetime").IsRequired();
+
+        //    entity.HasOne<TEstadoVenta>()
+        //        .WithMany()
+        //        .HasForeignKey(e => e.IdEstadoVenta)
+        //        .OnDelete(DeleteBehavior.Restrict);
+
+        //    entity.HasOne<TTipoEntrega>()
+        //        .WithMany()
+        //        .HasForeignKey(e => e.IdTipoEntrega)
+        //        .OnDelete(DeleteBehavior.Restrict);
+        //});
+
+        //modelBuilder.Entity<TVentaDetalle>(entity =>
+        //{
+        //    entity.ToTable("TVentaDetalle");
+
+        //    entity.Property(e => e.Cantidad).HasPrecision(10, 2).IsRequired();
+        //    entity.Property(e => e.PrecioBase).HasPrecision(10, 2).IsRequired();
+        //    entity.Property(e => e.PrecioPersonalizacion).HasPrecision(10, 2);
+        //    entity.Property(e => e.PrecioFinal).HasPrecision(10, 2).IsRequired();
+        //    entity.Property(e => e.SubTotal).HasPrecision(10, 2).IsRequired();
+
+        //    entity.HasOne<TVenta>()
+        //        .WithMany()
+        //        .HasForeignKey(e => e.IdVenta)
+        //        .OnDelete(DeleteBehavior.Cascade);
+
+        //    entity.HasOne<TTorta>()
+        //        .WithMany()
+        //        .HasForeignKey(e => e.IdTorta)
+        //        .OnDelete(DeleteBehavior.Restrict);
+
+        //    entity.HasOne<TTortaLote>()
+        //        .WithMany()
+        //        .HasForeignKey(e => e.IdTortaLote)
+        //        .OnDelete(DeleteBehavior.Restrict);
+        //});
+
+        //modelBuilder.Entity<TMetodoPago>(entity =>
+        //{
+        //    entity.ToTable("TMetodoPago");
+        //    entity.Property(e => e.Nombre).HasMaxLength(100).IsRequired();
+        //});
+
+        //modelBuilder.Entity<TPagoVenta>(entity =>
+        //{
+        //    entity.ToTable("TPagoVenta");
+
+        //    entity.Property(e => e.Monto).HasPrecision(10, 2).IsRequired();
+        //    entity.Property(e => e.FechaPago).HasColumnType("datetime").IsRequired();
+
+        //    entity.HasOne<TVenta>()
+        //        .WithMany()
+        //        .HasForeignKey(e => e.IdVenta)
+        //        .OnDelete(DeleteBehavior.Cascade);
+
+        //    entity.HasOne<TMetodoPago>()
+        //        .WithMany()
+        //        .HasForeignKey(e => e.IdMetodoPago)
+        //        .OnDelete(DeleteBehavior.Restrict);
+        //});
+
+        //modelBuilder.Entity<TEstadoEntrega>(entity =>
+        //{
+        //    entity.ToTable("TEstadoEntrega");
+        //    entity.Property(e => e.Nombre).HasMaxLength(100).IsRequired();
+        //});
+
+        //modelBuilder.Entity<TEntregaDelivery>(entity =>
+        //{
+        //    entity.ToTable("TEntregaDelivery");
+
+        //    entity.Property(e => e.DireccionEntrega).HasMaxLength(300).IsRequired();
+        //    entity.Property(e => e.FechaEntregaProgramada).HasColumnType("datetime");
+
+        //    entity.HasOne<TVenta>()
+        //        .WithMany()
+        //        .HasForeignKey(e => e.IdVenta)
+        //        .OnDelete(DeleteBehavior.Cascade);
+
+        //    entity.HasOne<TEstadoEntrega>()
+        //        .WithMany()
+        //        .HasForeignKey(e => e.IdEstadoEntrega)
+        //        .OnDelete(DeleteBehavior.Restrict);
+        //});
+
+        //modelBuilder.Entity<TTipoComprobante>(entity =>
+        //{
+        //    entity.ToTable("TTipoComprobante");
+        //    entity.Property(e => e.Nombre).HasMaxLength(100).IsRequired();
+        //});
+
+        //modelBuilder.Entity<TComprobanteVenta>(entity =>
+        //{
+        //    entity.ToTable("TComprobanteVenta");
+
+        //    entity.Property(e => e.Serie).HasMaxLength(10).IsRequired();
+        //    entity.Property(e => e.Numero).HasMaxLength(20).IsRequired();
+        //    entity.Property(e => e.FechaEmision).HasColumnType("datetime").IsRequired();
+
+        //    entity.HasOne<TVenta>()
+        //        .WithMany()
+        //        .HasForeignKey(e => e.IdVenta)
+        //        .OnDelete(DeleteBehavior.Cascade);
+
+        //    entity.HasOne<TTipoComprobante>()
+        //        .WithMany()
+        //        .HasForeignKey(e => e.IdTipoComprobante)
+        //        .OnDelete(DeleteBehavior.Restrict);
+        //});
+
+        //modelBuilder.Entity<TCancelacionVenta>(entity =>
+        //{
+        //    entity.ToTable("TCancelacionVenta");
+
+        //    entity.Property(e => e.Motivo).HasMaxLength(500).IsRequired();
+        //    entity.Property(e => e.FechaCancelacion).HasColumnType("datetime").IsRequired();
+
+        //    entity.HasOne<TVenta>()
+        //        .WithMany()
+        //        .HasForeignKey(e => e.IdVenta)
+        //        .OnDelete(DeleteBehavior.Cascade);
+        //});
+
+        // =========================================================
+        // PROMOCIONES
+        // =========================================================
+
+        //modelBuilder.Entity<TPromocion>(entity =>
+        //{
+        //    entity.ToTable("TPromocion");
+
+        //    entity.Property(e => e.Nombre).HasMaxLength(150).IsRequired();
+        //    entity.Property(e => e.DescuentoPorcentaje).HasPrecision(5, 2).IsRequired();
+        //    entity.Property(e => e.FechaInicio).HasColumnType("datetime").IsRequired();
+        //    entity.Property(e => e.FechaFin).HasColumnType("datetime");
+        //});
+
+        //modelBuilder.Entity<TPromocionTorta>(entity =>
+        //{
+        //    entity.ToTable("TPromocionTorta");
+
+        //    entity.HasOne<TPromocion>()
+        //        .WithMany()
+        //        .HasForeignKey(e => e.IdPromocion)
+        //        .OnDelete(DeleteBehavior.Cascade);
+
+        //    entity.HasOne<TTorta>()
+        //        .WithMany()
+        //        .HasForeignKey(e => e.IdTorta)
+        //        .OnDelete(DeleteBehavior.Restrict);
+        //});
+
+        modelBuilder.Entity<TTipoDocumento>(entity =>
+        {
+            entity.ToTable("TTipoDocumento");
+
+            entity.Property(e => e.Nombre)
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.HasIndex(e => e.Nombre)
+                .IsUnique();
         });
     }
 }

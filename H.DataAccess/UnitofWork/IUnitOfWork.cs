@@ -7,7 +7,7 @@ namespace H.DataAccess.UnitofWork
     public interface IUnitOfWork
     {
         IProductoRepository ProductoRepository { get; }     
-        ICategoriaRepository CategoriaRepository { get; }
+        ITortaLoteRepository TortaLoteRepository { get; }
         IClienteRepository ClienteRepository { get; }
         IRolRepository RolRepository { get; }
         IPersonaRepository PersonaRepository { get; }
@@ -20,6 +20,8 @@ namespace H.DataAccess.UnitofWork
         ICompraDetalleRepository CompraDetalleRepository { get; }
         IRecetaTortaRepository RecetaTortaRepository { get; }
         IProduccionRepository ProduccionRepository { get; }
+        ICategoriaTortaRepository CategoriaTortaRepository { get; }
+        ITortaImagenRepository TortaImagenRepository { get; }
 
         void Commit();
         void Rollback();

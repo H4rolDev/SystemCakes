@@ -3,22 +3,27 @@ using H.DataAccess.Enums;
 using H.DataAccess.Log;
 using H.DataAccess.UnitofWork;
 using H.DTOs;
+using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 
 namespace H.Services
 {
-    public class CategoriaService: ICategoriaService
+    public class CategoriaTortaService: ICategoriaTortaService
     {
         private IUnitOfWork _unitOfWork;
-        public CategoriaService(IUnitOfWork unitOfWork)
+        private readonly ICloudinaryService _cloudinaryService;
+
+        public CategoriaTortaService(IUnitOfWork unitOfWork, ICloudinaryService cloudinaryService)
         {
             _unitOfWork = unitOfWork;
+            _cloudinaryService = cloudinaryService;
         }
-        public int Add(Categoria entidad)
+
+        public int Add(CategoriaTorta entidad)
         {
             try
             {
-                var modelo = _unitOfWork.CategoriaRepository.Add(entidad);
+                var modelo = _unitOfWork.CategoriaTortaRepository.Add(entidad);
                 _unitOfWork.Commit();
                 return modelo.Id;
             }
@@ -36,18 +41,18 @@ namespace H.Services
             }
         }
 
-        public int Update(Categoria entidad)
+        public int Update(CategoriaTorta entidad)
         {
             try
             {
-                var modelo = _unitOfWork.CategoriaRepository.Update(entidad);
+                var modelo = _unitOfWork.CategoriaTortaRepository.Update(entidad);
                 _unitOfWork.Commit();
                 return modelo.Id;
             }
             catch (Exception ex)
             {
                 var error = new Error();
-                error.Message = "CategoriaService" + ex.Message;
+                error.Message = "CategoriaTortaService" + ex.Message;
                 error.Exception = ex;
                 error.Operation = "Update";
                 error.Code = TiposError.NoInsertado;
@@ -62,14 +67,14 @@ namespace H.Services
         {
             try
             {
-                var rpta = _unitOfWork.CategoriaRepository.Delete(id, usuario);
+                var rpta = _unitOfWork.CategoriaTortaRepository.Delete(id, usuario);
                 _unitOfWork.Commit();
                 return rpta;
             }
             catch (Exception ex)
             {
                 var error = new Error();
-                error.Message = "CategoriaService" + ex.Message;
+                error.Message = "CategoriaTortaService" + ex.Message;
                 error.Exception = ex;
                 error.Operation = "Delete";
                 error.Code = TiposError.NoEliminado;
@@ -80,16 +85,16 @@ namespace H.Services
             }
         }
 
-        public Categoria GetById(int id)
+        public CategoriaTorta GetById(int id)
         {
             try
             {
-                return _unitOfWork.CategoriaRepository.GetById(id);
+                return _unitOfWork.CategoriaTortaRepository.GetById(id);
             }
             catch (Exception ex)
             {
                 var error = new Error();
-                error.Message = "CategoriaService" + ex.Message;
+                error.Message = "AlmacenService" + ex.Message;
                 error.Exception = ex;
                 error.Operation = "Update";
                 error.Code = TiposError.NoEncontrado;
@@ -100,24 +105,24 @@ namespace H.Services
             }
         }
 
-        public IEnumerable<CategoriaListadoDTO> ObtenerCombo()
-		{
-			try
-			{
-				return _unitOfWork.CategoriaRepository.ObtenerCombo();
-			}
-			catch (Exception ex)
-			{
-				var error = new Error();
-				error.Message = "CategoriaService" + ex.Message;
-				error.Exception = ex;
-				error.Operation = "ObtenerListadoActivos";
-				error.Code = TiposError.NoEncontrado;
-				error.Objeto = JsonConvert.SerializeObject(null);
+        public IEnumerable<CategoriaTortaListadoDTO> ObtenerCombo()
+        {
+            try
+            {
+                return _unitOfWork.CategoriaTortaRepository.ObtenerCombo();
+            }
+            catch (Exception ex)
+            {
+                var error = new Error();
+                error.Message = "CategoriaService" + ex.Message;
+                error.Exception = ex;
+                error.Operation = "ObtenerListadoActivos";
+                error.Code = TiposError.NoEncontrado;
+                error.Objeto = JsonConvert.SerializeObject(null);
 
-				LogErp.EscribirBaseDatos(error);
-				throw ex;
-			}
-		}
+                LogErp.EscribirBaseDatos(error);
+                throw ex;
+            }
+        }
     }
 }

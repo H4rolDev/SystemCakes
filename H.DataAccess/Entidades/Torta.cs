@@ -8,11 +8,11 @@ namespace H.DataAccess.Entidades
 {
     public class Torta : BaseEntity
     {
+        public decimal IdCategoriaTorta {  get; set; }
         public string Nombre { get; set; }
         public string Descripcion {  get; set; }
-        public decimal PrecioVenta {  get; set; }
-        public decimal StockDisponible {  get; set; }
-        public string? ImagenUrl { get; set; }
-        public string? ImagenPublicId { get; set; }
+        public string Cantidades { get; set; }
+        public decimal PrecioVenta { get; set; }
+        public bool EsPersonalizable { get; set; }
     }
 }

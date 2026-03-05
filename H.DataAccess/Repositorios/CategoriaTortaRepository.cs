@@ -11,33 +11,33 @@ using H.DataAccess.Infrastructure;
 using H.DataAccess.Log;
 using H.DataAccess.Repositorios;
 using Newtonsoft.Json;
+using Dapper;
 using System.Data;
 using H.DTOs;
-using Dapper;
 
 namespace H.DataAccess.Repositorios
 {
-    public class CategoriaRepository : GenericRepository<TCategoria>, ICategoriaRepository
+    public class CategoriaTortaRepository : GenericRepository<TCategoriaTorta>, ICategoriaTortaRepository
     {
         private Mapper mapper;
-        public CategoriaRepository(sistemContext context, IConnectionFactory connectionFactory) : base(context, connectionFactory)
+        public CategoriaTortaRepository(sistemContext context, IConnectionFactory connectionFactory) : base(context, connectionFactory)
         {
-            var config = new MapperConfiguration(cfg => cfg.CreateMap<Categoria, TCategoria>(MemberList.None).ReverseMap());
+            var config = new MapperConfiguration(cfg => cfg.CreateMap<CategoriaTorta, TCategoriaTorta>(MemberList.None).ReverseMap());
             mapper = new Mapper(config);
         }
 
-        public TCategoria Add(Categoria entidad)
+        public TCategoriaTorta Add(CategoriaTorta entidad)
         {
             try
             {
-                var modelo = mapper.Map<TCategoria>(entidad);
+                var modelo = mapper.Map<TCategoriaTorta>(entidad);
                 base.Add(modelo);
                 return modelo;
             }
             catch (Exception ex)
             {
                 var error = new Error();
-                error.Message = "CategoriaRepository" + ex.Message;
+                error.Message = "CtegoriaRepository" + ex.Message;
                 error.Exception = ex;
                 error.Operation = "Add";
                 error.Code = TiposError.NoInsertado;
@@ -48,18 +48,18 @@ namespace H.DataAccess.Repositorios
             }
         }
 
-        public TCategoria Update(Categoria entidad)
+        public TCategoriaTorta Update(CategoriaTorta entidad)
         {
             try
             {
-                var modelo = mapper.Map<TCategoria>(entidad);
+                var modelo = mapper.Map<TCategoriaTorta>(entidad);
                 base.Update(modelo);
                 return modelo;
             }
             catch (Exception ex)
             {
                 var error = new Error();
-                error.Message = "CategoriaRepository" + ex.Message;
+                error.Message = "CtegoriaRepository" + ex.Message;
                 error.Exception = ex;
                 error.Operation = "Update";
                 error.Code = TiposError.NoActualizado;
@@ -80,7 +80,7 @@ namespace H.DataAccess.Repositorios
             catch (Exception ex)
             {
                 var error = new Error();
-                error.Message = "CategoriaRepository" + ex.Message;
+                error.Message = "CtegoriaRepository" + ex.Message;
                 error.Exception = ex;
                 error.Operation = "Delete";
                 error.Code = TiposError.NoEliminado;
@@ -91,17 +91,17 @@ namespace H.DataAccess.Repositorios
             }
         }
 
-        public Categoria GetById(int id)
+        public CategoriaTorta GetById(int id)
         {
             try
             {
                 var modelo = base.GetById(id);
-                return mapper.Map<Categoria>(modelo);
+                return mapper.Map<CategoriaTorta>(modelo);
             }
             catch (Exception ex)
             {
                 var error = new Error();
-                error.Message = "CategoriaRepository" + ex.Message;
+                error.Message = "CtegoriaRepository" + ex.Message;
                 error.Exception = ex;
                 error.Operation = "GetById";
                 error.Code = TiposError.NoEncontrado;
@@ -112,21 +112,21 @@ namespace H.DataAccess.Repositorios
             }
         }
 
-        public IEnumerable<CategoriaListadoDTO> ObtenerCombo()
+        public IEnumerable<CategoriaTortaListadoDTO> ObtenerCombo()
         {
             try
             {
-                var query = "SP_Categoria_ListadoActivo_Combo";
+                var query = "SP_CategoriaTorta_ListadoActivo_Combo";
                 using (var conn = connectionFactory.GetConnection)
                 {
-                    var rpta = SqlMapper.Query<CategoriaListadoDTO>(conn, query, param: null, commandType: CommandType.StoredProcedure);
+                    var rpta = SqlMapper.Query<CategoriaTortaListadoDTO>(conn, query, param: null, commandType: CommandType.StoredProcedure);
                     return rpta.ToList();
                 }
             }
             catch (Exception ex)
             {
                 var error = new Error();
-                error.Message = "CategoriaRepository" + ex.Message;
+                error.Message = "CategoriaTortaRepository" + ex.Message;
                 error.Exception = ex;
                 error.Operation = "ObtenerCombo";
                 error.Code = TiposError.NoInsertado;

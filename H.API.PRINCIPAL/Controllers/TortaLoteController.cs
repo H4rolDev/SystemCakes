@@ -9,21 +9,21 @@ namespace H.API.PRINCIPAL.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class CategoriaController : ControllerBase
+    public class TortaLoteController : ControllerBase
     {
         private IUnitOfWork unitOfWork;
 
-        public CategoriaController(IUnitOfWork unitOfWork)
+        public TortaLoteController(IUnitOfWork unitOfWork)
         {
             this.unitOfWork = unitOfWork;
         }
 
         [HttpPost("Insertar")]
-        public IActionResult Insert([FromBody] Categoria categoria)
+        public IActionResult Insert([FromBody] TortaLote categoria)
         {
             try
             {
-                var servicio = new CategoriaService(unitOfWork);
+                var servicio = new TortaLoteService(unitOfWork);
                 categoria.FechaCreacion = Fecha.Hoy;
                 categoria.FechaModificacion = Fecha.Hoy;
                 var respuesta = servicio.Add(categoria);
@@ -36,11 +36,11 @@ namespace H.API.PRINCIPAL.Controllers
         }
 
         [HttpPut("Modificar")]
-        public IActionResult Update([FromBody] Categoria categoria)
+        public IActionResult Update([FromBody] TortaLote categoria)
         {
             try
             {
-                var servicio = new CategoriaService(unitOfWork);
+                var servicio = new TortaLoteService(unitOfWork);
                 categoria.FechaModificacion = Fecha.Hoy;
                 var respuesta = servicio.Update(categoria);
                 return Ok(respuesta);
@@ -56,7 +56,7 @@ namespace H.API.PRINCIPAL.Controllers
         {
             try
             {
-                var servicio = new CategoriaService(unitOfWork);
+                var servicio = new TortaLoteService(unitOfWork);
                 var respuesta = servicio.Delete(id, usuario);
                 return Ok(respuesta);
             }
@@ -71,7 +71,7 @@ namespace H.API.PRINCIPAL.Controllers
         {
             try
             {
-                var servicio = new CategoriaService(unitOfWork);
+                var servicio = new TortaLoteService(unitOfWork);
                 return Ok(servicio.GetById(id));
             }
             catch (Exception ex)
@@ -85,7 +85,7 @@ namespace H.API.PRINCIPAL.Controllers
         {
             try
             {
-                var servicio = new CategoriaService(unitOfWork);
+                var servicio = new TortaLoteService(unitOfWork);
                 return Ok(servicio.ObtenerCombo());
             }
             catch (Exception ex)

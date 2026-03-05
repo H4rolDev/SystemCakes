@@ -7,18 +7,26 @@ using System.Threading.Tasks;
 
 namespace H.DataAccess.Models
 {
-    public partial class TRol
+    public partial class TTortaImagen
     {
         /// <summary>
         /// Identificador de registro.
         /// </summary>
         public int Id { get; set; }
         /// <summary>
-        /// Nombre del rol.
+        /// Identificador de categoria de la torta.
         /// </summary>
-        public string Nombre { get; set; } = null!;
+        public decimal IdTorta { get; set; }
         /// <summary>
-        /// Estado del registro.
+        /// Url de imagen.
+        /// </summary>
+        public string ImagenUrl { get; set; } = null!;
+        /// <summary>
+        /// Imagen public Id.
+        /// </summary>
+        public string ImagenPublicId { get; set; } = null!;
+        /// <summary>
+        /// Estado del registro
         /// </summary>
         public bool Activo { get; set; }
         /// <summary>
@@ -28,7 +36,7 @@ namespace H.DataAccess.Models
         /// <summary>
         /// Usuario de modificación del registro
         /// </summary>
-        public string? UsuarioModificacion { get; set; } = null!;
+        public string UsuarioModificacion { get; set; } = null!;
         /// <summary>
         /// Fecha de creación del registro
         /// </summary>
@@ -36,6 +44,6 @@ namespace H.DataAccess.Models
         /// <summary>
         /// Fecha de modificación del registro
         /// </summary>
-        public DateTime? FechaModificacion { get; set; }
+        public DateTime FechaModificacion { get; set; }
     }
 }

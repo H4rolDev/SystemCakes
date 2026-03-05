@@ -7,24 +7,20 @@ using System.Threading.Tasks;
 
 namespace H.DataAccess.Models
 {
-    public partial class TCategoria
+    public partial class TCategoriaTorta
     {
         /// <summary>
         /// Identificador de registro.
         /// </summary>
         public int Id { get; set; }
         /// <summary>
-        /// Nombre del producto.
+        /// Nombre de categoria de la torta.
         /// </summary>
         public string Nombre { get; set; } = null!;
         /// <summary>
-        /// Descripcion de la categoria.
-        /// </summary>
-        public string Descripcion { get; set; } = null!;
-        /// <summary>
         /// Estado del registro
         /// </summary>
-        public bool Estado { get; set; }
+        public bool Activo { get; set; }
         /// <summary>
         /// Usuario de creación del registro
         /// </summary>

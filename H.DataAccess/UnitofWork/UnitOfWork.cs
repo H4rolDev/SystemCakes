@@ -27,7 +27,7 @@ namespace H.DataAccess.UnitofWork
         }
 
         private IProductoRepository _ProductoRepository;
-        private ICategoriaRepository _CategoriaRepository;
+        private ITortaLoteRepository _TortaLoteRepository;
         private IClienteRepository _ClienteRepository;
         private IRolRepository _RolRepository;
         private IPersonaRepository _PersonaRepository;
@@ -40,6 +40,8 @@ namespace H.DataAccess.UnitofWork
         private ICompraDetalleRepository _CompraDetalleRepository;
         private IRecetaTortaRepository _RecetaTortaRepository;
         private IProduccionRepository _ProduccionRepository;
+        private ICategoriaTortaRepository _CategoriaTortaRepository;
+        private ITortaImagenRepository _TortaImagenRepository;
 
         IProductoRepository IUnitOfWork.ProductoRepository
         {
@@ -48,11 +50,11 @@ namespace H.DataAccess.UnitofWork
                 return _ProductoRepository ?? new ProductoRepository(_context, _connectionFactory);
             }
         }
-        ICategoriaRepository IUnitOfWork.CategoriaRepository
+        ITortaLoteRepository IUnitOfWork.TortaLoteRepository
         {
             get
             {
-                return _CategoriaRepository ?? new CategoriaRepository(_context, _connectionFactory);
+                return _TortaLoteRepository ?? new TortaLoteRepository(_context, _connectionFactory);
             }
         }
         IClienteRepository IUnitOfWork.ClienteRepository
@@ -76,7 +78,6 @@ namespace H.DataAccess.UnitofWork
                 return _PersonaRepository ?? new PersonaRepository(_context, _connectionFactory);
             }
         }
-
         IUsuarioRepository IUnitOfWork.UsuarioRepository
         {
             get
@@ -84,7 +85,6 @@ namespace H.DataAccess.UnitofWork
                 return _UsuarioRepository ?? new UsuarioRepository(_context, _connectionFactory);
             }   
         }
-
         IUsuarioRolRepository IUnitOfWork.UsuarioRolRepository
         {
             get
@@ -92,7 +92,6 @@ namespace H.DataAccess.UnitofWork
                 return _UsuarioRolRepository ?? new UsuarioRolRepository(_context, _connectionFactory);
             }
         }
-
         ITortaRepository IUnitOfWork.TortaRepository
         {
             get
@@ -100,7 +99,6 @@ namespace H.DataAccess.UnitofWork
                 return _TortaRepository ?? new TortaRepository(_context, _connectionFactory);
             }
         }
-
         ITipoDocumentoRepository IUnitOfWork.TipoDocumentoRepository
         {
             get
@@ -108,7 +106,6 @@ namespace H.DataAccess.UnitofWork
                 return _TipoDocumentoRepository ?? new TipoDocumentoRepository(_context, _connectionFactory);
             }
         }
-
         IInsumoRepository IUnitOfWork.InsumoRepository
         {
             get
@@ -116,7 +113,6 @@ namespace H.DataAccess.UnitofWork
                 return _InsumoRepository ?? new InsumoRepository(_context, _connectionFactory);
             }
         }
-
         ICompraRepository IUnitOfWork.CompraRepository
         {
             get
@@ -124,7 +120,6 @@ namespace H.DataAccess.UnitofWork
                 return _CompraRepository ?? new CompraRepository(_context, _connectionFactory);
             }
         }
-
         ICompraDetalleRepository IUnitOfWork.CompraDetalleRepository
         {
             get
@@ -132,7 +127,6 @@ namespace H.DataAccess.UnitofWork
                 return _CompraDetalleRepository ?? new CompraDetalleRepository(_context, _connectionFactory);
             }
         }
-
         IRecetaTortaRepository IUnitOfWork.RecetaTortaRepository
         {
             get
@@ -140,12 +134,26 @@ namespace H.DataAccess.UnitofWork
                 return _RecetaTortaRepository ?? new RecetaTortaRepository(_context, _connectionFactory);
             }
         }
-
         IProduccionRepository IUnitOfWork.ProduccionRepository
         {
             get
             {
                 return _ProduccionRepository ?? new ProduccionRepository(_context, _connectionFactory);
+            }
+        }
+        ICategoriaTortaRepository IUnitOfWork.CategoriaTortaRepository
+        {
+            get
+            {
+                return _CategoriaTortaRepository ?? new CategoriaTortaRepository(_context, _connectionFactory);
+            }
+        }
+
+        ITortaImagenRepository IUnitOfWork.TortaImagenRepository
+        {
+            get
+            {
+                return _TortaImagenRepository ?? new TortaImagenRepository(_context, _connectionFactory);
             }
         }
 

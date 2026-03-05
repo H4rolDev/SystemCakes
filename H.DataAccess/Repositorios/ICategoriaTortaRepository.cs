@@ -10,12 +10,12 @@ using H.DTOs;
 
 namespace H.DataAccess.Repositorios
 {
-    public interface ICategoriaRepository : IGenericRepository<TCategoria>
+    public interface ICategoriaTortaRepository : IGenericRepository<TCategoriaTorta>
     {
-        TCategoria Add(Categoria entidad);
+        TCategoriaTorta Add(CategoriaTorta entidad);
         int Delete(int id, string usuario);
-        TCategoria Update(Categoria entidad);
-        Categoria GetById(int id);
-        IEnumerable<CategoriaListadoDTO> ObtenerCombo();
+        TCategoriaTorta Update(CategoriaTorta entidad);
+        CategoriaTorta GetById(int id);
+        IEnumerable<CategoriaTortaListadoDTO> ObtenerCombo();
     }
 }

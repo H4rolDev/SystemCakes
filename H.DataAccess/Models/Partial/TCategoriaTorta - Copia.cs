@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace H.DataAccess.Models
 {
-    public partial class TCategoria : BaseEntity
+    public partial class TUnidadMedida : BaseEntity
     {
     }
 }

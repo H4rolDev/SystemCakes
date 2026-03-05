@@ -6,9 +6,8 @@ using System.Threading.Tasks;
 
 namespace H.DataAccess.Entidades
 {
-    public class Categoria: BaseEntity
+    public class UnidadMedida : BaseEntity
     {
         public string Nombre { get; set; }
-        public string? Descripcion { get; set; }
     }
 }

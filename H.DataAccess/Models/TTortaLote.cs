@@ -7,36 +7,36 @@ using System.Threading.Tasks;
 
 namespace H.DataAccess.Models
 {
-    public partial class TTorta
+    public partial class TTortaLote
     {
         /// <summary>
         /// Identificador de registro.
         /// </summary>
         public int Id { get; set; }
         /// <summary>
-        /// Identificador de categoria de la torta.
+        /// Identificador de la torta.
         /// </summary>
-        public decimal IdCategoriaTorta { get; set; }
+        public int IdTorta { get; set; }
         /// <summary>
-        /// Nombre de la torta.
+        /// Numero de lote registrado.
         /// </summary>
-        public string Nombre { get; set; } = null!;
+        public string NumeroLote { get; set; } = null!;
         /// <summary>
-        /// Descripcion de la torta.
+        /// Fecha de vencimiento de torta lote.
         /// </summary>
-        public string Descripcion { get; set; } = null!;
+        public DateTime FechaProduccion { get; set; }
         /// <summary>
-        /// Cantidades o porciones de la torta.
+        /// Fecha de vencimiento de torta lote.
         /// </summary>
-        public string Cantidades { get; set; }
+        public DateTime? FechaVencimiento { get; set; }
         /// <summary>
-        /// Precio de venta de la torta.
+        /// Cantidad inicial de torta lote.
         /// </summary>
-        public string? PrecioVenta { get; set; }
+        public decimal CantidadInicial { get; set; }
         /// <summary>
-        /// Indicador de si es perzonalizable o no.
+        /// Cantidad disponible de torta lote.
         /// </summary>
-        public bool? EsPerzonalizable { get; set; }
+        public decimal CantidaddDisponible { get; set; }
         /// <summary>
         /// Estado del registro
         /// </summary>
