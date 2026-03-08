@@ -3,27 +3,22 @@ using H.DataAccess.Enums;
 using H.DataAccess.Log;
 using H.DataAccess.UnitofWork;
 using H.DTOs;
-using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 
 namespace H.Services
 {
-    public class CategoriaTortaService: ICategoriaTortaService
+    public class UnidadMedidaService: IUnidadMedidaService
     {
         private IUnitOfWork _unitOfWork;
-        private readonly ICloudinaryService _cloudinaryService;
-
-        public CategoriaTortaService(IUnitOfWork unitOfWork, ICloudinaryService cloudinaryService)
+        public UnidadMedidaService(IUnitOfWork unitOfWork)
         {
             _unitOfWork = unitOfWork;
-            _cloudinaryService = cloudinaryService;
         }
-
-        public int Add(CategoriaTorta entidad)
+        public int Add(UnidadMedida entidad)
         {
             try
             {
-                var modelo = _unitOfWork.CategoriaTortaRepository.Add(entidad);
+                var modelo = _unitOfWork.UnidadMedidaRepository.Add(entidad);
                 _unitOfWork.Commit();
                 return modelo.Id;
             }
@@ -41,18 +36,18 @@ namespace H.Services
             }
         }
 
-        public int Update(CategoriaTorta entidad)
+        public int Update(UnidadMedida entidad)
         {
             try
             {
-                var modelo = _unitOfWork.CategoriaTortaRepository.Update(entidad);
+                var modelo = _unitOfWork.UnidadMedidaRepository.Update(entidad);
                 _unitOfWork.Commit();
                 return modelo.Id;
             }
             catch (Exception ex)
             {
                 var error = new Error();
-                error.Message = "CategoriaTortaService" + ex.Message;
+                error.Message = "UnidadMedidaService" + ex.Message;
                 error.Exception = ex;
                 error.Operation = "Update";
                 error.Code = TiposError.NoInsertado;
@@ -67,14 +62,14 @@ namespace H.Services
         {
             try
             {
-                var rpta = _unitOfWork.CategoriaTortaRepository.Delete(id, usuario);
+                var rpta = _unitOfWork.UnidadMedidaRepository.Delete(id, usuario);
                 _unitOfWork.Commit();
                 return rpta;
             }
             catch (Exception ex)
             {
                 var error = new Error();
-                error.Message = "CategoriaTortaService" + ex.Message;
+                error.Message = "UnidadMedidaService" + ex.Message;
                 error.Exception = ex;
                 error.Operation = "Delete";
                 error.Code = TiposError.NoEliminado;
@@ -85,16 +80,16 @@ namespace H.Services
             }
         }
 
-        public CategoriaTorta GetById(int id)
+        public UnidadMedida GetById(int id)
         {
             try
             {
-                return _unitOfWork.CategoriaTortaRepository.GetById(id);
+                return _unitOfWork.UnidadMedidaRepository.GetById(id);
             }
             catch (Exception ex)
             {
                 var error = new Error();
-                error.Message = "AlmacenService" + ex.Message;
+                error.Message = "UnidadMedidaService" + ex.Message;
                 error.Exception = ex;
                 error.Operation = "Update";
                 error.Code = TiposError.NoEncontrado;
@@ -105,16 +100,16 @@ namespace H.Services
             }
         }
 
-        public IEnumerable<CategoriaTortaListadoDTO> ObtenerCombo()
+        public IEnumerable<UnidadMedidaListadoDTO> ObtenerCombo()
         {
             try
             {
-                return _unitOfWork.CategoriaTortaRepository.ObtenerCombo();
+                return _unitOfWork.UnidadMedidaRepository.ObtenerCombo();
             }
             catch (Exception ex)
             {
                 var error = new Error();
-                error.Message = "CategoriaService" + ex.Message;
+                error.Message = "UnidadMedidaService" + ex.Message;
                 error.Exception = ex;
                 error.Operation = "ObtenerListadoActivos";
                 error.Code = TiposError.NoEncontrado;

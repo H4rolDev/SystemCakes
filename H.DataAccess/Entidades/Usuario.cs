@@ -8,7 +8,7 @@ namespace H.DataAccess.Entidades
 {
     public class Usuario: BaseEntity
     {
-        public int? IdTipoUsuario { get; set; }
+        public int? IdPersona { get; set; }
         public string Username { get; set; }
         public string PasswordHash { get; set; }
         public string PasswordSalt { get; set; }

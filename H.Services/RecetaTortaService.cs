@@ -138,8 +138,8 @@ namespace H.Services
                     {
                         IdTorta = dto.IdTorta,
                         IdInsumo = item.IdInsumo,
-                        CantidadNecesaria = item.CantidadNecesaria,
-                        Estado = true,
+                        CantidadRequerida = item.CantidadRequerida,
+                        Activo = true,
                         UsuarioCreacion = dto.UsuarioCreacion,
                         UsuarioModificacion = dto.UsuarioCreacion,
                         FechaCreacion = fechaActual,

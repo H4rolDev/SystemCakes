@@ -41,7 +41,7 @@ namespace H.DataAccess.UnitofWork
         private IRecetaTortaRepository _RecetaTortaRepository;
         private IProduccionRepository _ProduccionRepository;
         private ICategoriaTortaRepository _CategoriaTortaRepository;
-        private ITortaImagenRepository _TortaImagenRepository;
+        private IUnidadMedidaRepository _UnidadMedidaRepository;
 
         IProductoRepository IUnitOfWork.ProductoRepository
         {
@@ -149,11 +149,11 @@ namespace H.DataAccess.UnitofWork
             }
         }
 
-        ITortaImagenRepository IUnitOfWork.TortaImagenRepository
+        IUnidadMedidaRepository IUnitOfWork.UnidadMedidaRepository
         {
             get
             {
-                return _TortaImagenRepository ?? new TortaImagenRepository(_context, _connectionFactory);
+                return _UnidadMedidaRepository ?? new UnidadMedidaRepository(_context, _connectionFactory);
             }
         }
 

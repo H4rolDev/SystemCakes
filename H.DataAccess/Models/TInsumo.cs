@@ -20,7 +20,7 @@ namespace H.DataAccess.Models
         /// <summary>
         /// Unidad de medida.
         /// </summary>
-        public string UnidadMedida { get; set; } = null!;
+        public int IdUnidadMedida { get; set; }
         /// <summary>
         /// Stock actual de insumo.
         /// </summary>
@@ -36,7 +36,7 @@ namespace H.DataAccess.Models
         /// <summary>
         /// Estado del registro.
         /// </summary>
-        public bool Estado { get; set; }
+        public bool Activo { get; set; }
         /// <summary>
         /// Usuario de creación del registro
         /// </summary>

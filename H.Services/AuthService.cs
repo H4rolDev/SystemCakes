@@ -3,6 +3,7 @@ using H.DataAccess.Entidades;
 using H.DataAccess.Enums;
 using H.DataAccess.Helpers;
 using H.DataAccess.Log;
+using H.DataAccess.Models;
 using H.DataAccess.Repositorios;
 using H.DataAccess.UnitofWork;
 using H.DTOs;
@@ -33,58 +34,45 @@ namespace H.Services
         {
             try
             {
-                // 1. Validar que el usuario existe
                 var usuario = await _authRepository.GetUsuarioByUsername(request.Username);
-
                 if (usuario == null)
                 {
                     throw new Exception("Usuario o contraseña incorrectos");
                 }
-
-                // 2. Verificar contraseña
                 if (!SecurityHelper.VerifyPasswordHash(request.Password, usuario.PasswordHash, usuario.PasswordSalt))
                 {
                     throw new Exception("Usuario o contraseña incorrectos");
                 }
-
-                // 3. Verificar que el usuario esté activo
-                if (!usuario.Estado)
+                if (!usuario.Activo)
                 {
                     throw new Exception("El usuario se encuentra inactivo");
                 }
 
-                // 4. Obtener roles
                 var roles = await _authRepository.ObtenerRolesPorUsuario(usuario.Id);
 
-                // 5. Obtener tipo de usuario
-                var tipoUsuario = usuario.IdTipoUsuario.HasValue ? await _authRepository.ObtenerTipoUsuario(usuario.IdTipoUsuario.Value)
-                    : "Cliente";
+                var usuarioModel = _unitOfWork.UsuarioRepository.GetBy(p => p.Id == usuario.Id).FirstOrDefault();
+                var personaModel = _unitOfWork.PersonaRepository.GetBy(p => p.Id == usuarioModel.IdPersona).FirstOrDefault();
+                var tipoModel = _unitOfWork.TipoDocumentoRepository.GetBy(p => p.Id == personaModel.IdTipoDocumento).FirstOrDefault();
 
-                // 6. Obtener datos de persona
-                var persona = _unitOfWork.PersonaRepository.GetBy(p => p.IdUsuario == usuario.Id).FirstOrDefault();
-
-                // 7. Generar token
                 var token = GenerarToken(usuario, roles);
 
-                // 8. Preparar respuesta
                 var response = new LoginResponseDTO
                 {
                     IdUsuario = usuario.Id,
                     Username = usuario.Username,
                     Token = token,
-                    TipoUsuario = tipoUsuario ?? "Cliente",
                     Roles = roles,
-                    Persona = persona != null ? new PersonaDTO
+                    Persona = personaModel != null ? new PersonaDTO
                     {
-                        Id = persona.Id,
-                        TipoDocumento = persona.TipoDocumento,
-                        NumeroDocumento = persona.NumeroDocumento,
-                        Nombres = persona.Nombres,
-                        ApellidoPaterno = persona.ApellidoPaterno,
-                        ApellidoMaterno = persona.ApellidoMaterno,
-                        Telefono = persona.Telefono,
-                        Direccion = persona.Direccion,
-                        RazonSocial = persona.RazonSocial
+                        Id = personaModel.Id,
+                        TipoDocumento = tipoModel.Nombre,
+                        NumeroDocumento = personaModel.NumeroDocumento,
+                        Nombres = personaModel.Nombres,
+                        ApellidoPaterno = personaModel.ApellidoPaterno,
+                        ApellidoMaterno = personaModel.ApellidoMaterno,
+                        Telefono = personaModel.Telefono,
+                        Direccion = personaModel.Direccion,
+                        RazonSocial = personaModel.RazonSocial
                     } : null
                 };
 
@@ -109,36 +97,29 @@ namespace H.Services
         {
             try
             {
-                // 1. Validar que el username no exista
-                if (await _authRepository.ExisteUsername(request.Username))
-                {
-                    throw new Exception("El nombre de usuario ya existe");
-                }
+                if (string.IsNullOrWhiteSpace(request.Username))
+                    throw new Exception("El nombre de usuario es requerido");
 
-                // 2. Validar que el número de documento no exista
-                if (await _authRepository.ExisteNumeroDocumento(request.NumeroDocumento))
-                {
-                    throw new Exception("El número de documento ya está registrado");
-                }
+                if (string.IsNullOrWhiteSpace(request.Password))
+                    throw new Exception("La contraseña es requerida");
 
-                // 3. Crear hash de contraseña
+                if (request.Password.Length < 6)
+                    throw new Exception("La contraseña debe tener al menos 6 caracteres");
+
+                if (string.IsNullOrWhiteSpace(request.NumeroDocumento))
+                    throw new Exception("El número de documento es requerido");
+
+                if (string.IsNullOrWhiteSpace(request.Nombres))
+                    throw new Exception("Los nombres son requeridos");
+
+                if (string.IsNullOrWhiteSpace(request.ApellidoPaterno))
+                    throw new Exception("El apellido paterno es requerido");
+
                 SecurityHelper.CreatePasswordHash(request.Password, out string passwordHash, out string passwordSalt);
-
-                // 4. Preparar entidades
-                var usuario = new Usuario
-                {
-                    Username = request.Username,
-                    PasswordHash = passwordHash,
-                    PasswordSalt = passwordSalt,
-                    IdTipoUsuario = 2, // Cliente
-                    Estado = true,
-                    UsuarioCreacion = request.Username,
-                    FechaCreacion = DateTime.Now
-                };
 
                 var persona = new Persona
                 {
-                    TipoDocumento = request.TipoDocumento,
+                    IdTipoDocumento = request.IdTipoDocumento,
                     NumeroDocumento = request.NumeroDocumento,
                     Nombres = request.Nombres,
                     ApellidoPaterno = request.ApellidoPaterno,
@@ -146,18 +127,46 @@ namespace H.Services
                     Telefono = request.Telefono,
                     Direccion = request.Direccion,
                     RazonSocial = request.RazonSocial,
-                    Estado = true,
+                    Activo = true,
                     UsuarioCreacion = request.Username,
-                    FechaCreacion = DateTime.Now
+                    UsuarioModificacion = request.Username,
+                    FechaCreacion = Fecha.Hoy,
+                    FechaModificacion = Fecha.Hoy
                 };
+                var personaModelo = _unitOfWork.PersonaRepository.Add(persona);
+                _unitOfWork.Commit();
 
-                // 5. Registrar en base de datos
-                var idUsuario = await _authRepository.RegistrarCliente(usuario, persona);
+                var usuario = new Usuario
+                {
+                    IdPersona = personaModelo.Id,
+                    Username = request.Username,
+                    PasswordHash = passwordHash,
+                    PasswordSalt = passwordSalt,
+                    Activo = true,
+                    UsuarioCreacion = request.Username,
+                    UsuarioModificacion = request.Username,
+                    FechaCreacion = Fecha.Hoy,
+                    FechaModificacion = Fecha.Hoy
+                };
+                var usuarioModelo = _unitOfWork.UsuarioRepository.Add(usuario);
+                _unitOfWork.Commit();
 
-                // 6. Preparar respuesta
+                var rolCliente = new TUsuarioRol
+                {
+                    IdUsuario = usuarioModelo.Id,
+                    IdRol = 3,
+                    Activo = true,
+                    UsuarioCreacion = request.Username,
+                    UsuarioModificacion = request.Username,
+                    FechaCreacion = Fecha.Hoy,
+                    FechaModificacion = Fecha.Hoy
+                };
+                _unitOfWork.UsuarioRolRepository.Add(rolCliente);
+                _unitOfWork.Commit();
+
                 return new RegisterResponseDTO
                 {
-                    IdUsuario = idUsuario,
+                    IdUsuario = usuarioModelo.Id,
                     Username = request.Username,
                     Mensaje = "Cliente registrado exitosamente"
                 };
@@ -198,9 +207,17 @@ namespace H.Services
 
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
-                return false;
+                var error = new Error();
+                error.Message = "TortaService" + ex.Message;
+                error.Exception = ex;
+                error.Operation = "Update";
+                error.Code = TiposError.NoInsertado;
+                error.Objeto = JsonConvert.SerializeObject(token);
+
+                LogErp.EscribirBaseDatos(error);
+                throw ex;
             }
         }
 
@@ -250,49 +267,69 @@ namespace H.Services
                     throw new Exception("El número de documento ya está registrado");
                 }
 
-                var usuarioRegistra = await _authRepository.GetUsuarioByUsername(request.UsuarioRegistra);
+                /*var usuarioRegistra = await _authRepository.GetUsuarioByUsername(request.UsuarioRegistra);
                 if (usuarioRegistra == null)
                 {
                     throw new Exception("Usuario que registra no encontrado");
                 }
-
-                /*if (usuarioRegistra.IdTipoUsuario != 1)
+                
+                if (usuarioRegistra.IdTipoUsuario != 1)
                 {
                     throw new Exception("Solo los administradores pueden registrar otros administradores");
                 }*/
 
                 SecurityHelper.CreatePasswordHash(request.Password, out string passwordHash, out string passwordSalt);
-
-                var usuario = new Usuario
-                {
-                    Username = request.Username,
-                    PasswordHash = passwordHash,
-                    PasswordSalt = passwordSalt,
-                    IdTipoUsuario = 1,
-                    Estado = true,
-                    UsuarioCreacion = request.UsuarioRegistra,
-                    FechaCreacion = DateTime.Now
-                };
-
                 var persona = new Persona
                 {
-                    TipoDocumento = request.TipoDocumento,
+                    IdTipoDocumento = request.IdTipoDocumento,
                     NumeroDocumento = request.NumeroDocumento,
                     Nombres = request.Nombres,
                     ApellidoPaterno = request.ApellidoPaterno,
                     ApellidoMaterno = request.ApellidoMaterno,
                     Telefono = request.Telefono,
                     Direccion = request.Direccion,
-                    Estado = true,
-                    UsuarioCreacion = request.UsuarioRegistra,
-                    FechaCreacion = DateTime.Now
+                    Activo = true,
+                    UsuarioCreacion = request.Username,
+                    UsuarioModificacion = request.Username,
+                    FechaCreacion = Fecha.Hoy,
+                    FechaModificacion = Fecha.Hoy
                 };
+                var modelPersona = _unitOfWork.PersonaRepository.Add(persona);
+                _unitOfWork.Commit();
 
-                var idUsuario = await _authRepository.RegistrarAdministrador(usuario, persona);
+                var usuario = new Usuario
+                {
+                    IdPersona = modelPersona.Id,
+                    Username = request.Username,
+                    PasswordHash = passwordHash,
+                    PasswordSalt = passwordSalt,
+                    Activo = true,
+                    UsuarioCreacion = request.Username,
+                    UsuarioModificacion = request.Username,
+                    FechaCreacion = Fecha.Hoy,
+                    FechaModificacion = Fecha.Hoy
+                };
+                var modelUsuario = _unitOfWork.UsuarioRepository.Add(usuario);
+                _unitOfWork.Commit();
+
+                var rolAdmin = new TUsuarioRol
+                {
+                    IdUsuario = modelUsuario.Id,
+                    IdRol = 2,
+                    Activo = true,
+                    UsuarioCreacion = request.Username,
+                    FechaCreacion = DateTime.Now,
+                    FechaModificacion = null,
+                    UsuarioModificacion = null
+                };
+                var modelRol = _unitOfWork.UsuarioRolRepository.Add(rolAdmin);
+                _unitOfWork.Commit();
+
+                //var idUsuario = await _authRepository.RegistrarAdministrador(usuario, persona);
 
                 return new RegisterResponseDTO
                 {
-                    IdUsuario = idUsuario,
+                    IdUsuario = modelUsuario.Id,
                     Username = request.Username,
                     Mensaje = "Administrador registrado exitosamente"
                 };

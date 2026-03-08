@@ -23,7 +23,6 @@ public partial class sistemContext : DbContext
     //public virtual DbSet<TPersonal> TPersonal { get; set; }
     public virtual DbSet<TCategoriaTorta> TCategoriaTorta { get; set; }
     public virtual DbSet<TTorta> TTorta { get; set; }
-    public virtual DbSet<TTortaImagen> TTortaImagen { get; set; }
     public virtual DbSet<TTortaLote> TTortaLote { get; set; }
     //public virtual DbSet<TUnidadMedida> TUnidadMedida { get; set; }
     public virtual DbSet<TInsumo> TInsumo { get; set; }
@@ -59,20 +58,24 @@ public partial class sistemContext : DbContext
         {
             if (typeof(BaseEntity).IsAssignableFrom(entityType.ClrType))
             {
-                modelBuilder.Entity(entityType.ClrType).Property<DateTime>("FechaCreacion")
+                modelBuilder.Entity(entityType.ClrType)
+                    .Property("FechaCreacion")
                     .HasColumnType("datetime")
                     .IsRequired();
 
-                modelBuilder.Entity(entityType.ClrType).Property<int>("UsuarioCreacion")
+                modelBuilder.Entity(entityType.ClrType)
+                    .Property("UsuarioCreacion")
                     .IsRequired();
 
-                modelBuilder.Entity(entityType.ClrType).Property<DateTime?>("FechaModificacion")
+                modelBuilder.Entity(entityType.ClrType)
+                    .Property("FechaModificacion")
                     .HasColumnType("datetime");
 
-                modelBuilder.Entity(entityType.ClrType).Property<int?>("UsuarioModificacion");
+                modelBuilder.Entity(entityType.ClrType)
+                    .Property("UsuarioModificacion");
 
-                modelBuilder.Entity(entityType.ClrType).Property<bool>("Activo")
-                    .HasDefaultValue(true)
+                modelBuilder.Entity(entityType.ClrType)
+                    .Property("Activo")
                     .IsRequired();
             }
         }
@@ -114,8 +117,6 @@ public partial class sistemContext : DbContext
             entity.Property(e => e.Direccion)
                 .HasMaxLength(300);
 
-            entity.Property(e => e.Email)
-                .HasMaxLength(150);
 
             entity.HasOne<TTipoDocumento>()
                 .WithMany()
@@ -127,7 +128,8 @@ public partial class sistemContext : DbContext
         {
             entity.ToTable("TUsuario");
             entity.Property(e => e.Username).HasMaxLength(100).IsRequired();
-            entity.Property(e => e.PasswordHash).HasMaxLength(300).IsRequired();
+            entity.Property(e => e.PasswordHash).IsRequired();
+            entity.Property(e => e.PasswordSalt).IsRequired();
 
             entity.HasOne<TPersona>()
                 .WithMany()
@@ -193,6 +195,8 @@ public partial class sistemContext : DbContext
             entity.Property(e => e.Descripcion).HasMaxLength(500);
             entity.Property(e => e.Cantidades).HasMaxLength(150);
             entity.Property(e => e.PrecioVenta).HasPrecision(10, 2).IsRequired();
+            entity.Property(e => e.ImagenUrl);
+            entity.Property(e => e.ImagenPublicId);
 
             entity.HasOne<TCategoriaTorta>()
                 .WithMany()
@@ -200,35 +204,19 @@ public partial class sistemContext : DbContext
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
-        modelBuilder.Entity<TTortaImagen>(entity =>
-        {
-            entity.ToTable("TTortaImagen");
-
-            entity.Property(e => e.ImagenUrl).HasMaxLength(500).IsRequired();
-            entity.Property(e => e.ImagenPublicId).HasMaxLength(200);
-
-            entity.HasOne<TTorta>()
-                .WithMany()
-                .HasForeignKey(e => e.IdTorta)
-                .OnDelete(DeleteBehavior.Cascade);
-        });
-
         modelBuilder.Entity<TTortaLote>(entity =>
         {
             entity.ToTable("TTortaLote");
 
-            entity.Property(e => e.CantidadDisponible).HasPrecision(10, 2).IsRequired();
+            entity.Property(e => e.NumeroLote).HasPrecision(10, 2).IsRequired();
+            entity.Property(e => e.CantidadInicial).HasPrecision(10, 2).IsRequired();
+            entity.Property(e => e.CantidaddDisponible).HasPrecision(10, 2).IsRequired();
             entity.Property(e => e.FechaProduccion).HasColumnType("datetime").IsRequired();
             entity.Property(e => e.FechaVencimiento).HasColumnType("datetime").IsRequired();
 
             entity.HasOne<TTorta>()
                 .WithMany()
                 .HasForeignKey(e => e.IdTorta)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            entity.HasOne<TProduccion>()
-                .WithMany()
-                .HasForeignKey(e => e.IdProduccion)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
@@ -248,8 +236,9 @@ public partial class sistemContext : DbContext
             entity.ToTable("TInsumo");
 
             entity.Property(e => e.Nombre).HasMaxLength(150).IsRequired();
-            entity.Property(e => e.StockActual).HasPrecision(10, 2).IsRequired();
-            entity.Property(e => e.StockMinimo).HasPrecision(10, 2).IsRequired();
+            entity.Property(e => e.StockActual).HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.StockMinimo).HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.CostoUnitario).HasPrecision(18, 2).IsRequired();
 
             entity.HasOne<TUnidadMedida>()
                 .WithMany()
@@ -323,6 +312,7 @@ public partial class sistemContext : DbContext
             entity.ToTable("TProduccion");
 
             entity.Property(e => e.CantidadProducida).HasPrecision(10, 2).IsRequired();
+            entity.Property(e => e.Observacion).HasMaxLength(150);
             entity.Property(e => e.FechaProduccion).HasColumnType("datetime").IsRequired();
 
             entity.HasOne<TTorta>()
@@ -550,8 +540,6 @@ public partial class sistemContext : DbContext
                 .HasMaxLength(100)
                 .IsRequired();
 
-            entity.HasIndex(e => e.Nombre)
-                .IsUnique();
         });
     }
 }

@@ -15,10 +15,10 @@ namespace H.DataAccess.Repositorios
         Task<Usuario?> GetUsuarioByUsername(string username);
         Task<bool> ExisteUsername(string username);
         Task<bool> ExisteNumeroDocumento(string numeroDocumento);
-        Task<int> RegistrarCliente(Usuario usuario, Persona persona);
-        Task<int> RegistrarAdministrador(Usuario usuario, Persona persona);
+        //Task<int> RegistrarCliente(Usuario usuario, Persona persona);
+        //Task<int> RegistrarAdministrador(Usuario usuario, Persona persona);
         Task<List<string>> ObtenerRolesPorUsuario(int idUsuario);
-        Task<Persona?> ObtenerPersonaPorIdUsuario(int idUsuario);
-        Task<string?> ObtenerTipoUsuario(int idTipoUsuario);
+        //Task<Persona?> ObtenerPersonaPorIdUsuario(int idUsuario);
+        //Task<string?> ObtenerTipoUsuario(int idTipoUsuario);
     }
 }

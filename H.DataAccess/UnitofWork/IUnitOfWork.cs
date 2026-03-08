@@ -21,7 +21,7 @@ namespace H.DataAccess.UnitofWork
         IRecetaTortaRepository RecetaTortaRepository { get; }
         IProduccionRepository ProduccionRepository { get; }
         ICategoriaTortaRepository CategoriaTortaRepository { get; }
-        ITortaImagenRepository TortaImagenRepository { get; }
+        IUnidadMedidaRepository UnidadMedidaRepository { get; }
 
         void Commit();
         void Rollback();

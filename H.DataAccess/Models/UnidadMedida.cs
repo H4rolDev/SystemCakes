@@ -18,6 +18,10 @@ namespace H.DataAccess.Models
         /// </summary>
         public string Nombre { get; set; } = null!;
         /// <summary>
+        /// Nombre de la abreviatura.
+        /// </summary>
+        public string Abreviatura { get; set; } = null!;
+        /// <summary>
         /// Estado del registro
         /// </summary>
         public bool Activo { get; set; }

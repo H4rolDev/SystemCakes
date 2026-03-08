@@ -9,5 +9,6 @@ namespace H.DataAccess.Entidades
     public class UnidadMedida : BaseEntity
     {
         public string Nombre { get; set; }
+        public string Abreviatura { get; set; }
     }
 }

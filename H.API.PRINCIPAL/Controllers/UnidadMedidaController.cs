@@ -12,12 +12,10 @@ namespace H.API.PRINCIPAL.Controllers
     public class UnidadMedidaController : ControllerBase
     {
         private IUnitOfWork unitOfWork;
-        private readonly ICloudinaryService _cloudinaryService;
 
         public UnidadMedidaController(IUnitOfWork unitOfWork, ICloudinaryService cloudinaryService)
         {
             this.unitOfWork = unitOfWork;
-            _cloudinaryService = cloudinaryService;
         }
 
         [HttpPost("Insertar")]
@@ -25,7 +23,7 @@ namespace H.API.PRINCIPAL.Controllers
         {
             try
             {
-                var servicio = new UnidadMedidaService(unitOfWork, _cloudinaryService);
+                var servicio = new UnidadMedidaService(unitOfWork);
                 producto.FechaCreacion = Fecha.Hoy;
                 producto.FechaModificacion = Fecha.Hoy;
                 var respuesta = servicio.Add(producto);
@@ -42,7 +40,7 @@ namespace H.API.PRINCIPAL.Controllers
         {
             try
             {
-                var servicio = new UnidadMedidaService(unitOfWork, _cloudinaryService);
+                var servicio = new UnidadMedidaService(unitOfWork);
                 producto.FechaModificacion = Fecha.Hoy;
                 var respuesta = servicio.Update(producto);
                 return Ok(respuesta);
@@ -58,7 +56,7 @@ namespace H.API.PRINCIPAL.Controllers
         {
             try
             {
-                var servicio = new UnidadMedidaService(unitOfWork, _cloudinaryService);
+                var servicio = new UnidadMedidaService(unitOfWork);
                 var respuesta = servicio.Delete(id, usuario);
                 return Ok(respuesta);
             }
@@ -73,7 +71,7 @@ namespace H.API.PRINCIPAL.Controllers
         {
             try
             {
-                var servicio = new UnidadMedidaService(unitOfWork, _cloudinaryService);
+                var servicio = new UnidadMedidaService(unitOfWork);
                 return Ok(servicio.GetById(id));
             }
             catch (Exception ex)
@@ -87,41 +85,8 @@ namespace H.API.PRINCIPAL.Controllers
         {
             try
             {
-                var servicio = new UnidadMedidaService(unitOfWork, _cloudinaryService);
+                var servicio = new UnidadMedidaService(unitOfWork);
                 return Ok(servicio.ObtenerCombo());
-            }
-            catch (Exception ex)
-            {
-                return new ErrorResult(ex, User);
-            }
-        }
-
-        [HttpPost("InsertarConImagen")]
-        public async Task<IActionResult> InsertarConImagen([FromForm] UnidadMedida producto, IFormFile? imagen)
-        {
-            try
-            {
-                var servicio = new UnidadMedidaService(unitOfWork, _cloudinaryService);
-                producto.FechaCreacion = Fecha.Hoy;
-                producto.FechaModificacion = Fecha.Hoy;
-                var respuesta = await servicio.AddAsync(producto, imagen);
-                return Ok(respuesta);
-            }
-            catch (Exception ex)
-            {
-                return new ErrorResult(ex, User);
-            }
-        }
-
-        [HttpPut("ModificarConImagen")]
-        public async Task<IActionResult> ModificarConImagen([FromForm] UnidadMedida producto, IFormFile? imagen)
-        {
-            try
-            {
-                var servicio = new UnidadMedidaService(unitOfWork, _cloudinaryService);
-                producto.FechaModificacion = Fecha.Hoy;
-                var respuesta = await servicio.UpdateAsync(producto, imagen);
-                return Ok(respuesta); 
             }
             catch (Exception ex)
             {

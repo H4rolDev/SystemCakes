@@ -16,7 +16,7 @@ namespace H.DataAccess.Models
         /// <summary>
         /// Identificador de categoria de la torta.
         /// </summary>
-        public decimal IdCategoriaTorta { get; set; }
+        public int IdCategoriaTorta { get; set; }
         /// <summary>
         /// Nombre de la torta.
         /// </summary>
@@ -37,6 +37,14 @@ namespace H.DataAccess.Models
         /// Indicador de si es perzonalizable o no.
         /// </summary>
         public bool? EsPerzonalizable { get; set; }
+        /// <summary>
+        /// Url de la imagen
+        /// </summary>
+        public string? ImagenUrl { get; set; }
+        /// <summary>
+        /// Identificador de la imagen
+        /// </summary>
+        public string? ImagenPublicId { get; set; }
         /// <summary>
         /// Estado del registro
         /// </summary>

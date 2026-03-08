@@ -10,6 +10,6 @@
     public class InsumoDetalleInsertDTO
     {
         public int IdInsumo { get; set; }
-        public decimal CantidadNecesaria { get; set; }
+        public decimal CantidadRequerida { get; set; }
     }
 }

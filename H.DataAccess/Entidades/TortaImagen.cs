@@ -8,7 +8,7 @@ namespace H.DataAccess.Entidades
 {
     public class TortaImagen : BaseEntity
     {
-        public decimal IdTorta {  get; set; }
+        public int IdTorta {  get; set; }
         public string ImagenUrl { get; set; }
         public string ImagenPublicId {  get; set; }
         public string EsPrincipal { get; set; }

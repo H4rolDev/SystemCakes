@@ -118,7 +118,7 @@ namespace H.Services
 
                 foreach (var item in receta)
                 {
-                    var cantidadTotal = item.CantidadNecesaria * dto.CantidadProducida;
+                    var cantidadTotal = item.CantidadRequerida * dto.CantidadProducida;
                     var insumo = _unitOfWork.InsumoRepository.GetById(item.IdInsumo);
 
                     if (insumo == null)
@@ -132,9 +132,9 @@ namespace H.Services
                 {
                     IdTorta = dto.IdTorta,
                     CantidadProducida = dto.CantidadProducida,
-                    Fecha = fechaActual,
+                    FechaProduccion = fechaActual,
                     Observacion = string.IsNullOrWhiteSpace(dto.Observacion) ? null : dto.Observacion.Trim(),
-                    Estado = true,
+                    Activo = true,
                     UsuarioCreacion = dto.UsuarioCreacion,
                     UsuarioModificacion = dto.UsuarioCreacion,
                     FechaCreacion = fechaActual,
@@ -145,7 +145,7 @@ namespace H.Services
 
                 foreach (var item in receta)
                 {
-                    var cantidadTotal = item.CantidadNecesaria * dto.CantidadProducida;
+                    var cantidadTotal = item.CantidadRequerida * dto.CantidadProducida;
                     var insumo = _unitOfWork.InsumoRepository.GetById(item.IdInsumo);
                     insumo.StockActual -= cantidadTotal;
                     _unitOfWork.InsumoRepository.Update(insumo);
@@ -156,7 +156,7 @@ namespace H.Services
                 if (torta == null)
                     throw new Exception("La torta no existe.");
 
-                torta.StockDisponible += dto.CantidadProducida;
+                torta.Cantidades += dto.CantidadProducida;
 
                 _unitOfWork.TortaRepository.Update(torta);
                 _unitOfWork.Commit();

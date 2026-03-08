@@ -28,18 +28,18 @@ namespace H.DataAccess.Repositorios
             try
             {
                 var usuarioDb = await _context.TUsuario
-                    .FirstOrDefaultAsync(u => u.Username == username && u.Estado);
-
+                    .FirstOrDefaultAsync(u => u.Username == username && u.Activo);
+                    
                 if (usuarioDb == null) return null;
 
                 return new Usuario
                 {
                     Id = usuarioDb.Id,
-                    IdTipoUsuario = usuarioDb.IdTipoUsuario,
+                    IdPersona = usuarioDb.IdPersona,
                     Username = usuarioDb.Username,
                     PasswordHash = usuarioDb.PasswordHash,
                     PasswordSalt = usuarioDb.PasswordSalt,
-                    Estado = usuarioDb.Estado,
+                    Activo = usuarioDb.Activo,
                     UsuarioCreacion = usuarioDb.UsuarioCreacion,
                     UsuarioModificacion = usuarioDb.UsuarioModificacion,
                     FechaCreacion = usuarioDb.FechaCreacion,
@@ -103,9 +103,8 @@ namespace H.DataAccess.Repositorios
             }
         }
 
-        public async Task<int> RegistrarCliente(Usuario usuario, Persona persona)
+        /*public async Task<int> RegistrarCliente(Usuario usuario, Persona persona)
         {
-            // ✅ Usar CreateExecutionStrategy para compatibilidad con EnableRetryOnFailure
             var strategy = _context.Database.CreateExecutionStrategy();
 
             return await strategy.ExecuteAsync(async () =>
@@ -116,11 +115,11 @@ namespace H.DataAccess.Repositorios
                     // 1. Crear Usuario
                     var nuevoUsuario = new TUsuario
                     {
-                        IdTipoUsuario = 2, // 2 = Cliente
+                        //IdTipoUsuario = 2,
                         Username = usuario.Username,
                         PasswordHash = usuario.PasswordHash,
                         PasswordSalt = usuario.PasswordSalt,
-                        Estado = true,
+                        Activo = true,
                         UsuarioCreacion = usuario.Username,
                         FechaCreacion = Fecha.Hoy,
                         FechaModificacion = Fecha.Hoy
@@ -133,8 +132,8 @@ namespace H.DataAccess.Repositorios
                     var rolCliente = new TUsuarioRol
                     {
                         IdUsuario = nuevoUsuario.Id,
-                        IdRol = 2, // Rol Cliente
-                        Estado = true,
+                        IdRol = 2,
+                        Activo = true,
                         UsuarioCreacion = usuario.Username,
                         FechaCreacion = Fecha.Hoy
                     };
@@ -183,13 +182,15 @@ namespace H.DataAccess.Repositorios
                 }
             });
         }
+        */
+        
         public async Task<List<string>> ObtenerRolesPorUsuario(int idUsuario)
         {
             try
             {
                 var roles = await (from ur in _context.TUsuarioRol
                                    join r in _context.TRol on ur.IdRol equals r.Id
-                                   where ur.IdUsuario == idUsuario && ur.Estado && r.Estado
+                                   where ur.IdUsuario == idUsuario && ur.Activo && r.Activo
                                    select r.Nombre).ToListAsync();
 
                 return roles;
@@ -209,12 +210,12 @@ namespace H.DataAccess.Repositorios
             }
         }
 
-        public async Task<Persona?> ObtenerPersonaPorIdUsuario(int idUsuario)
+        /*public async Task<Persona?> ObtenerPersonaPorIdUsuario(int idUsuario)
         {
             try
             {
                 var personaDb = await _context.TPersona
-                    .FirstOrDefaultAsync(p => p.IdUsuario == idUsuario && p.Estado);
+                    .FirstOrDefaultAsync(p => p.IdUsuario == idUsuario && p.Activo);
 
                 if (personaDb == null) return null;
 
@@ -222,7 +223,7 @@ namespace H.DataAccess.Repositorios
                 {
                     Id = personaDb.Id,
                     IdUsuario = personaDb.IdUsuario,
-                    TipoDocumento = personaDb.TipoDocumento,
+                    IdTipoDocumento = personaDb.IdTipoDocumento,
                     NumeroDocumento = personaDb.NumeroDocumento,
                     Nombres = personaDb.Nombres,
                     ApellidoPaterno = personaDb.ApellidoPaterno,
@@ -245,9 +246,9 @@ namespace H.DataAccess.Repositorios
                 LogErp.EscribirBaseDatos(error);
                 throw;
             }
-        }
+        }*/
 
-        public async Task<string?> ObtenerTipoUsuario(int idTipoUsuario)
+        /*public async Task<string?> ObtenerTipoUsuario(int idTipoUsuario)
         {
             try
             {
@@ -270,6 +271,7 @@ namespace H.DataAccess.Repositorios
                 throw;
             }
         }
+*/
 
         /*public async Task<int> RegistrarAdministrador(Usuario usuario, Persona persona)
         {
@@ -351,7 +353,8 @@ namespace H.DataAccess.Repositorios
             });
         }
 */
-        public async Task<int> RegistrarAdministrador(Usuario usuario, Persona persona)
+    
+        /*public async Task<int> RegistrarAdministrador(Usuario usuario, Persona persona)
         {
             // Usar CreateExecutionStrategy para compatibilidad con EnableRetryOnFailure
             var strategy = _context.Database.CreateExecutionStrategy();
@@ -364,11 +367,11 @@ namespace H.DataAccess.Repositorios
                     // 1. Crear Usuario Administrador
                     var nuevoUsuario = new TUsuario
                     {
-                        IdTipoUsuario = 1, // 1 = Administrador
+                        //IdTipoUsuario = 1, // 1 = Administrador
                         Username = usuario.Username,
                         PasswordHash = usuario.PasswordHash,
                         PasswordSalt = usuario.PasswordSalt,
-                        Estado = true,
+                        Activo = true,
                         UsuarioCreacion = usuario.UsuarioCreacion,
                         FechaCreacion = DateTime.Now,
                         FechaModificacion = DateTime.Now
@@ -382,7 +385,7 @@ namespace H.DataAccess.Repositorios
                     {
                         IdUsuario = nuevoUsuario.Id,
                         IdRol = 1, // Rol Administrador
-                        Estado = true,
+                        Activo = true,
                         UsuarioCreacion = usuario.UsuarioCreacion,
                         FechaCreacion = DateTime.Now,
                         FechaModificacion = null,
@@ -433,5 +436,6 @@ namespace H.DataAccess.Repositorios
                 }
             });
         }
+    */
     }
 }

@@ -23,11 +23,11 @@ namespace H.DataAccess.Models
         /// <summary>
         /// Cantidad de insumos comprados.
         /// </summary>
-        public decimal CantidadNecesaria { get; set; }
+        public decimal CantidadRequerida { get; set; }
         /// <summary>
         /// Estado del registro.
         /// </summary>
-        public bool Estado { get; set; }
+        public bool Activo { get; set; }
         /// <summary>
         /// Usuario de creación del registro
         /// </summary>

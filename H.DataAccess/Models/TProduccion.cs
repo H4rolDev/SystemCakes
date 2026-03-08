@@ -19,7 +19,7 @@ namespace H.DataAccess.Models
         /// <summary>
         /// Fecha de la produccion.
         /// </summary>
-        public DateTime Fecha { get; set; }
+        public DateTime FechaProduccion { get; set; }
         /// <summary>
         /// Cantridad producida de torta.
         /// </summary>
@@ -31,7 +31,7 @@ namespace H.DataAccess.Models
         /// <summary>
         /// Estado del registro
         /// </summary>
-        public bool Estado { get; set; }
+        public bool Activo { get; set; }
         /// <summary>
         /// Usuario de creación del registro
         /// </summary>

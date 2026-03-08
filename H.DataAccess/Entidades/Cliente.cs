@@ -8,7 +8,7 @@ namespace H.DataAccess.Entidades
 {
     public class Cliente: BaseEntity
     {
-        public string TipoDocumento { get; set; }
+        public int IdTipoDocumento { get; set; }
         public string? NumeroDocumento { get; set; }
         public string? NombresPersona { get; set; }
         public string? ApellidosPersona { get; set; }

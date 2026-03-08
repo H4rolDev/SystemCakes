@@ -1,5 +1,6 @@
 ﻿// H.API.PRINCIPAL/Controllers/AuthController.cs
 using H.DataAccess.Entidades;
+using H.DataAccess.Models;
 using H.DataAccess.Extension;
 using H.DataAccess.Helpers;
 using H.DTOs;
@@ -52,24 +53,6 @@ namespace H.API.PRINCIPAL.Controllers
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(request.Username))
-                    return BadRequest(new { mensaje = "El nombre de usuario es requerido" });
-
-                if (string.IsNullOrWhiteSpace(request.Password))
-                    return BadRequest(new { mensaje = "La contraseña es requerida" });
-
-                if (request.Password.Length < 6)
-                    return BadRequest(new { mensaje = "La contraseña debe tener al menos 6 caracteres" });
-
-                if (string.IsNullOrWhiteSpace(request.NumeroDocumento))
-                    return BadRequest(new { mensaje = "El número de documento es requerido" });
-
-                if (string.IsNullOrWhiteSpace(request.Nombres))
-                    return BadRequest(new { mensaje = "Los nombres son requeridos" });
-
-                if (string.IsNullOrWhiteSpace(request.ApellidoPaterno))
-                    return BadRequest(new { mensaje = "El apellido paterno es requerido" });
-
                 var response = await _authService.RegisterCliente(request);
                 return Ok(response);
             }
@@ -108,11 +91,6 @@ namespace H.API.PRINCIPAL.Controllers
         {
             try
             {
-                // En una implementación JWT básica, el logout se maneja del lado del cliente
-                // eliminando el token del almacenamiento local
-
-                // Si quieres implementar una lista negra de tokens, puedes agregar la lógica aquí
-
                 return Ok(new { mensaje = "Sesión cerrada exitosamente" });
             }
             catch (Exception ex)
@@ -178,11 +156,6 @@ namespace H.API.PRINCIPAL.Controllers
                     return BadRequest(new { mensaje = "El usuario que registra es requerido" });
 
                 var usernameFromToken = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
-
-                /*if (usernameFromToken != request.UsuarioRegistra)
-                {
-                    return Unauthorized(new { mensaje = "El usuario que registra no coincide con el token de autenticación" });
-                }*/
 
                 var response = await _authService.RegisterAdministrador(request);
                 return Ok(response);

@@ -13,13 +13,9 @@ namespace H.DataAccess.Models
         /// </summary>
         public int Id { get; set; }
         /// <summary>
-        /// Identificador del usuario.
-        /// </summary>
-        public int IdUsuario { get; set; }
-        /// <summary>
         /// Identificador del tipo de documento.
         /// </summary>
-        public string TipoDocumento { get; set; }
+        public int IdTipoDocumento { get; set; }
         /// <summary>
         /// Numero de documento del usuario.
         /// </summary>
@@ -51,7 +47,7 @@ namespace H.DataAccess.Models
         /// <summary>
         /// Estado del registro.
         /// </summary>
-        public bool Estado { get; set; }
+        public bool Activo { get; set; }
         /// <summary>
         /// Usuario de creación del registro
         /// </summary>

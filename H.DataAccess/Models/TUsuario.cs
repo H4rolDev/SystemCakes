@@ -13,9 +13,9 @@ namespace H.DataAccess.Models
         /// </summary>
         public int Id { get; set; }
         /// <summary>
-        /// Identificador del tipo de usuario.
+        /// Identificador del persona.
         /// </summary>
-        public int IdTipoUsuario { get; set; }
+        public int IdPersona { get; set; }
         /// <summary>
         /// Username.
         /// </summary>
@@ -31,7 +31,7 @@ namespace H.DataAccess.Models
         /// <summary>
         /// Estado del registro.
         /// </summary>
-        public bool Estado { get; set; }
+        public bool Activo { get; set; }
         /// <summary>
         /// Usuario de creación del registro
         /// </summary>

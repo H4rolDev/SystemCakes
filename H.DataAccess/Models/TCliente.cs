@@ -16,7 +16,7 @@ namespace H.DataAccess.Models
         /// <summary>
         /// Tipo de documento del cliente.
         /// </summary>
-        public string TipoDocumento { get; set; } = null!;
+        public int IdTipoDocumento { get; set; }
         /// <summary>
         /// Numero de documento del cliente.
         /// </summary>

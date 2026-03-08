@@ -11,9 +11,9 @@ using H.DataAccess.Infrastructure;
 using H.DataAccess.Log;
 using H.DataAccess.Repositorios;
 using Newtonsoft.Json;
-using Dapper;
 using System.Data;
 using H.DTOs;
+using Dapper;
 
 namespace H.DataAccess.Repositorios
 {
@@ -37,7 +37,7 @@ namespace H.DataAccess.Repositorios
             catch (Exception ex)
             {
                 var error = new Error();
-                error.Message = "CtegoriaRepository" + ex.Message;
+                error.Message = "UnidadMedidaRepository" + ex.Message;
                 error.Exception = ex;
                 error.Operation = "Add";
                 error.Code = TiposError.NoInsertado;
@@ -59,7 +59,7 @@ namespace H.DataAccess.Repositorios
             catch (Exception ex)
             {
                 var error = new Error();
-                error.Message = "CtegoriaRepository" + ex.Message;
+                error.Message = "UnidadMedidaRepository" + ex.Message;
                 error.Exception = ex;
                 error.Operation = "Update";
                 error.Code = TiposError.NoActualizado;
@@ -80,7 +80,7 @@ namespace H.DataAccess.Repositorios
             catch (Exception ex)
             {
                 var error = new Error();
-                error.Message = "CtegoriaRepository" + ex.Message;
+                error.Message = "UnidadMedidaRepository" + ex.Message;
                 error.Exception = ex;
                 error.Operation = "Delete";
                 error.Code = TiposError.NoEliminado;
@@ -101,7 +101,7 @@ namespace H.DataAccess.Repositorios
             catch (Exception ex)
             {
                 var error = new Error();
-                error.Message = "CtegoriaRepository" + ex.Message;
+                error.Message = "UnidadMedidaRepository" + ex.Message;
                 error.Exception = ex;
                 error.Operation = "GetById";
                 error.Code = TiposError.NoEncontrado;
