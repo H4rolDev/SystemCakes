@@ -195,6 +195,7 @@ public partial class sistemContext : DbContext
             entity.Property(e => e.Descripcion).HasMaxLength(500);
             entity.Property(e => e.Cantidades).HasMaxLength(150);
             entity.Property(e => e.PrecioVenta).HasPrecision(10, 2).IsRequired();
+            entity.Property(e => e.EsPersonalizable).HasPrecision(10, 2);
             entity.Property(e => e.ImagenUrl);
             entity.Property(e => e.ImagenPublicId);
 

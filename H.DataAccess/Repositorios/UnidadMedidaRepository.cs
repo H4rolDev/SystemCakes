@@ -116,7 +116,7 @@ namespace H.DataAccess.Repositorios
         {
             try
             {
-                var query = "SP_UnidadMedida_ListadoActivo_Combo";
+                var query = "SP_Obtener_ListadoUnidadMedida_Combo";
                 using (var conn = connectionFactory.GetConnection)
                 {
                     var rpta = SqlMapper.Query<UnidadMedidaListadoDTO>(conn, query, param: null, commandType: CommandType.StoredProcedure);

@@ -96,7 +96,7 @@ namespace H.API.PRINCIPAL.Controllers
             }
         }
 
-        [HttpPost("InsertarConImagen")]
+        [HttpPost("InsertarConImagenLote")]
         public async Task<IActionResult> InsertarConImagen([FromForm] Torta producto, IFormFile? imagen)
         {
             try
@@ -113,7 +113,7 @@ namespace H.API.PRINCIPAL.Controllers
             }
         }
 
-        [HttpPut("ModificarConImagen")]
+        [HttpPut("ModificarConImagenLote")]
         public async Task<IActionResult> ModificarConImagen([FromForm] Torta producto, IFormFile? imagen)
         {
             try

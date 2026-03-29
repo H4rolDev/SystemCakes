@@ -14,25 +14,25 @@ namespace H.DataAccess.Models
         /// </summary>
         public int Id { get; set; }
         /// <summary>
-        /// Nombre del insumo.
-        /// </summary>
-        public string Nombre { get; set; } = null!;
-        /// <summary>
         /// Unidad de medida.
         /// </summary>
         public int IdUnidadMedida { get; set; }
         /// <summary>
+        /// Nombre del insumo.
+        /// </summary>
+        public string Nombre { get; set; } = null!;
+        /// <summary>
         /// Stock actual de insumo.
         /// </summary>
-        public decimal StockActual { get; set; }
+        public decimal? StockActual { get; set; }
         /// <summary>
         /// Stock minimo de insumo.
         /// </summary>
-        public decimal StockMinimo { get; set; }
+        public decimal? StockMinimo { get; set; }
         /// <summary>
         /// Costo unitario de insumo.
         /// </summary>
-        public decimal CostoUnitario { get; set; }
+        public decimal? CostoUnitario { get; set; }
         /// <summary>
         /// Estado del registro.
         /// </summary>

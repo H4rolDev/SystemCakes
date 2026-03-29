@@ -187,7 +187,6 @@ namespace H.Services
                     entidad.ImagenUrl = url;
                     entidad.ImagenPublicId = ExtraerPublicId(url);
                 }
-                // Si no hay imagen nueva, conserva la que ya tiene el objeto
 
                 var modelo = _unitOfWork.TortaRepository.Update(entidad);
                 _unitOfWork.Commit();

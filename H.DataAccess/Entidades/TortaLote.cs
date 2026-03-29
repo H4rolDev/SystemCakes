@@ -13,6 +13,6 @@ namespace H.DataAccess.Entidades
         public DateTime FechaProduccion { get; set; }
         public DateTime? FechaVencimiento { get; set; }
         public decimal CantidadInicial { get; set; }
-        public decimal CantidaddDisponible { get; set; }
+        public decimal CantidadDisponible { get; set; }
     }
 }

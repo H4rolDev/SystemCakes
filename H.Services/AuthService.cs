@@ -52,7 +52,7 @@ namespace H.Services
 
                 var usuarioModel = _unitOfWork.UsuarioRepository.GetBy(p => p.Id == usuario.Id).FirstOrDefault();
                 var personaModel = _unitOfWork.PersonaRepository.GetBy(p => p.Id == usuarioModel.IdPersona).FirstOrDefault();
-                var tipoModel = _unitOfWork.TipoDocumentoRepository.GetBy(p => p.Id == personaModel.IdTipoDocumento).FirstOrDefault();
+                var tipoDocModel = _unitOfWork.TipoDocumentoRepository.GetBy(p => p.Id == personaModel.IdTipoDocumento).FirstOrDefault();
 
                 var token = GenerarToken(usuario, roles);
 
@@ -65,7 +65,7 @@ namespace H.Services
                     Persona = personaModel != null ? new PersonaDTO
                     {
                         Id = personaModel.Id,
-                        TipoDocumento = tipoModel.Nombre,
+                        TipoDocumento = tipoDocModel.Nombre,
                         NumeroDocumento = personaModel.NumeroDocumento,
                         Nombres = personaModel.Nombres,
                         ApellidoPaterno = personaModel.ApellidoPaterno,
@@ -318,9 +318,9 @@ namespace H.Services
                     IdRol = 2,
                     Activo = true,
                     UsuarioCreacion = request.Username,
-                    FechaCreacion = DateTime.Now,
-                    FechaModificacion = null,
-                    UsuarioModificacion = null
+                    FechaCreacion = Fecha.Hoy,
+                    FechaModificacion = Fecha.Hoy,
+                    UsuarioModificacion = request.Username
                 };
                 var modelRol = _unitOfWork.UsuarioRolRepository.Add(rolAdmin);
                 _unitOfWork.Commit();

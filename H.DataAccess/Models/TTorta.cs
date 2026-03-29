@@ -24,11 +24,11 @@ namespace H.DataAccess.Models
         /// <summary>
         /// Descripcion de la torta.
         /// </summary>
-        public string Descripcion { get; set; } = null!;
+        public string? Descripcion { get; set; } = null!;
         /// <summary>
         /// Cantidades o porciones de la torta.
         /// </summary>
-        public string Cantidades { get; set; }
+        public string? Cantidades { get; set; }
         /// <summary>
         /// Precio de venta de la torta.
         /// </summary>
@@ -36,7 +36,7 @@ namespace H.DataAccess.Models
         /// <summary>
         /// Indicador de si es perzonalizable o no.
         /// </summary>
-        public bool? EsPerzonalizable { get; set; }
+        public bool? EsPersonalizable { get; set; }
         /// <summary>
         /// Url de la imagen
         /// </summary>
