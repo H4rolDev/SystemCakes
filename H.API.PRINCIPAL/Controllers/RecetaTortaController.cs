@@ -81,7 +81,7 @@ namespace H.API.PRINCIPAL.Controllers
             }
         }
 
-        /*[HttpGet("ObtenerCombo")]
+        [HttpGet("ObtenerCombo")]
         public IActionResult ObtenerCombo()
         {
             try
@@ -93,7 +93,7 @@ namespace H.API.PRINCIPAL.Controllers
             {
                 return new ErrorResult(ex, User);
             }
-        }*/
+        }
 
         [HttpPost("InsertarMultipleTabla")]
         public IActionResult InsertarMultipleTabla(InsertarMultipleRecetaTortaDTO dto)
@@ -102,6 +102,21 @@ namespace H.API.PRINCIPAL.Controllers
             {
                 var servicio = new RecetaTortaService(unitOfWork);
                 var respuesta = servicio.AddMultipleTabla(dto);
+                return Ok(respuesta);
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult(ex, User);
+            }
+        }
+
+        [HttpPut("ActualizarMultipleTabla")]
+        public IActionResult ActualizarMultipleTabla(InsertarMultipleRecetaTortaDTO dto)
+        {
+            try
+            {
+                var servicio = new RecetaTortaService(unitOfWork);
+                var respuesta = servicio.UpdateMultipleTabla(dto);
                 return Ok(respuesta);
             }
             catch (Exception ex)

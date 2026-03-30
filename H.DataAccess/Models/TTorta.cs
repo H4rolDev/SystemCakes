@@ -32,11 +32,15 @@ namespace H.DataAccess.Models
         /// <summary>
         /// Precio de venta de la torta.
         /// </summary>
-        public string? PrecioVenta { get; set; }
+        public decimal? PrecioVenta { get; set; }
         /// <summary>
         /// Indicador de si es perzonalizable o no.
         /// </summary>
         public bool? EsPersonalizable { get; set; }
+        /// <summary>
+        /// Cantidades o porciones de la torta.
+        /// </summary>
+        public int StockDisponible { get; set; }
         /// <summary>
         /// Url de la imagen
         /// </summary>

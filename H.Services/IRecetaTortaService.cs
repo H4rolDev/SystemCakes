@@ -7,7 +7,7 @@ namespace H.Services
     {
         int Add(RecetaTorta entidad);
         int Update(RecetaTorta entidad);
-        int Delete(int id, string usuario);
+        bool Delete(int idTorta, string usuario);
         RecetaTorta GetById(int id);
         /*IEnumerable<InsertarMultipleRecetaTortaDTO> ObtenerCombo();*/
         public bool AddMultipleTabla(InsertarMultipleRecetaTortaDTO dto);

@@ -112,11 +112,11 @@ namespace H.DataAccess.Repositorios
             }
         }
 
-        /*public IEnumerable<RecetaTortaListadoDTO> ObtenerCombo()
+        public IEnumerable<RecetaTortaListadoDTO> ObtenerCombo()
         {
             try
             {
-                var query = "SP_RecetaTorta_ListadoActivo_Combo";
+                var query = "SP_Obtener_ListadoRecetaTorta_Combo";
                 using (var conn = connectionFactory.GetConnection)
                 {
                     var rpta = SqlMapper.Query<RecetaTortaListadoDTO>(conn, query, param: null, commandType: CommandType.StoredProcedure);
@@ -135,6 +135,6 @@ namespace H.DataAccess.Repositorios
 
                 throw ex;
             }
-        }*/
+        }
     }
 }

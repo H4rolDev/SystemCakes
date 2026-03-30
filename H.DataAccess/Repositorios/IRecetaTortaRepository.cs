@@ -16,6 +16,6 @@ namespace H.DataAccess.Repositorios
         int Delete(int id, string usuario);
         TRecetaTorta Update(RecetaTorta entidad);
         RecetaTorta GetById(int id);
-        /*IEnumerable<RecetaTortaListadoDTO> ObtenerCombo();*/
+        IEnumerable<RecetaTortaListadoDTO> ObtenerCombo();
     }
 }

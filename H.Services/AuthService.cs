@@ -267,17 +267,6 @@ namespace H.Services
                     throw new Exception("El número de documento ya está registrado");
                 }
 
-                /*var usuarioRegistra = await _authRepository.GetUsuarioByUsername(request.UsuarioRegistra);
-                if (usuarioRegistra == null)
-                {
-                    throw new Exception("Usuario que registra no encontrado");
-                }
-                
-                if (usuarioRegistra.IdTipoUsuario != 1)
-                {
-                    throw new Exception("Solo los administradores pueden registrar otros administradores");
-                }*/
-
                 SecurityHelper.CreatePasswordHash(request.Password, out string passwordHash, out string passwordSalt);
                 var persona = new Persona
                 {
@@ -324,8 +313,6 @@ namespace H.Services
                 };
                 var modelRol = _unitOfWork.UsuarioRolRepository.Add(rolAdmin);
                 _unitOfWork.Commit();
-
-                //var idUsuario = await _authRepository.RegistrarAdministrador(usuario, persona);
 
                 return new RegisterResponseDTO
                 {

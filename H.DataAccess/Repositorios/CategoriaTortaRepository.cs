@@ -116,7 +116,7 @@ namespace H.DataAccess.Repositorios
         {
             try
             {
-                var query = "SP_CategoriaTorta_ListadoActivo_Combo";
+                var query = "SP_Obtener_ListadoCategoriaTorta_Combo";
                 using (var conn = connectionFactory.GetConnection)
                 {
                     var rpta = SqlMapper.Query<CategoriaTortaListadoDTO>(conn, query, param: null, commandType: CommandType.StoredProcedure);
