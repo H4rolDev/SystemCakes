@@ -4,6 +4,7 @@ using H.Services;
 using H.DataAccess.Extension;
 using H.DataAccess.UnitofWork;
 using Microsoft.AspNetCore.Mvc;
+using H.DTOs;
 
 namespace H.API.PRINCIPAL.Controllers
 {
@@ -87,6 +88,112 @@ namespace H.API.PRINCIPAL.Controllers
             {
                 var servicio = new InsumoService(unitOfWork);
                 return Ok(servicio.ObtenerCombo());
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult(ex, User);
+            }
+        }
+
+        [HttpPost("InsertarMultipleTabla")]
+        public IActionResult InsertarMultipleTabla(InsertarLoteInsumoDTO dto)
+        {
+            try
+            {
+
+                var servicio = new InsumoService(unitOfWork);
+                var respuesta = servicio.InsertarLoteInsumo(dto);
+                return Ok(respuesta);
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult(ex, User);
+            }
+        }
+
+        [HttpPut("ActualizarLoteInsumo")]
+        public IActionResult ActualizarLoteInsumo(InsertarLoteInsumoDTO dto)
+        {
+            try
+            {
+
+                var servicio = new InsumoService(unitOfWork);
+                var respuesta = servicio.ActualizarLoteInsumo(dto);
+                return Ok(respuesta);
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult(ex, User);
+            }
+        }
+
+        [HttpPut("DesactivarLoteInsumo")]
+        public IActionResult DesactivarLote(int id, [FromQuery] string usuario)
+        {
+            try
+            {
+                var servicio = new InsumoService(unitOfWork);
+                servicio.DesactivarLoteInsumo(id, usuario);
+                return Ok(servicio);
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult(ex, User);
+            }
+        }
+
+        [HttpPut("DesactivarInsumo")]
+        public IActionResult DesactivarInsumo(int id, [FromQuery] string usuario)
+        {
+            try
+            {
+                var servicio = new InsumoService(unitOfWork);
+                servicio.DesactivarInsumo(id, usuario);
+                return Ok(servicio);
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult(ex, User);
+            }
+        }
+
+        [HttpPut("ActivarInsumo")]
+        public IActionResult ActivarInsumo(int id, [FromQuery] string usuario)
+        {
+            try
+            {
+                var servicio = new InsumoService(unitOfWork);
+                servicio.ActivarInsumo(id, usuario);
+                return Ok(true);
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult(ex, User);
+            }
+        }
+
+        [HttpPut("ActivarLoteInsumo")]
+        public IActionResult ActivarLote(int id, [FromQuery] string usuario)
+        {
+            try
+            {
+                var servicio = new InsumoService(unitOfWork);
+                servicio.ActivarLoteInsumo(id, usuario);
+                return Ok(true);
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult(ex, User);
+            }
+        }
+
+        [HttpGet("ObtenerLotesPorInsumo")]
+        public IActionResult ObtenerLotesPorInsumo(int idInsumo)
+        {
+            try
+            {
+                var servicio = new InsumoService(unitOfWork);
+                return Ok(servicio.ObtenerLotesPorInsumo(idInsumo));
             }
             catch (Exception ex)
             {

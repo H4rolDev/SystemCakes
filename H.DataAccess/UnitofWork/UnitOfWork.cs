@@ -42,6 +42,9 @@ namespace H.DataAccess.UnitofWork
         private IProduccionRepository _ProduccionRepository;
         private ICategoriaTortaRepository _CategoriaTortaRepository;
         private IUnidadMedidaRepository _UnidadMedidaRepository;
+        private IInsumoLoteRepository _InsumoLoteRepository;
+        private ITipoMovimientoRepository _TipoMovimientoRepository;
+        private IMovimientoInsumoRepository _MovimientoInsumoRepository;
 
         IProductoRepository IUnitOfWork.ProductoRepository
         {
@@ -148,12 +151,32 @@ namespace H.DataAccess.UnitofWork
                 return _CategoriaTortaRepository ?? new CategoriaTortaRepository(_context, _connectionFactory);
             }
         }
-
         IUnidadMedidaRepository IUnitOfWork.UnidadMedidaRepository
         {
             get
             {
                 return _UnidadMedidaRepository ?? new UnidadMedidaRepository(_context, _connectionFactory);
+            }
+        }
+        IInsumoLoteRepository IUnitOfWork.InsumoLoteRepository
+        {
+            get
+            {
+                return _InsumoLoteRepository ?? new InsumoLoteRepository(_context, _connectionFactory);
+            }
+        }
+        ITipoMovimientoRepository IUnitOfWork.TipoMovimientoRepository
+        {
+            get
+            {
+                return _TipoMovimientoRepository ?? new TipoMovimientoRepository(_context, _connectionFactory);
+            }
+        }
+        IMovimientoInsumoRepository IUnitOfWork.MovimientoInsumoRepository
+        {
+            get
+            {
+                return _MovimientoInsumoRepository ?? new MovimientoInsumoRepository(_context, _connectionFactory);
             }
         }
 

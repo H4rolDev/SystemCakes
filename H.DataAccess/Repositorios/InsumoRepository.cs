@@ -136,5 +136,36 @@ namespace H.DataAccess.Repositorios
                 throw ex;
             }
         }
+
+        public IEnumerable<InsumoLoteDTO> ObtenerLotesPorInsumo(int idInsumo)
+        {
+            try
+            {
+                var query = "SP_Obtener_Lotes_PorInsumo";
+
+                using (var conn = connectionFactory.GetConnection)
+                {
+                    var rpta = SqlMapper.Query<InsumoLoteDTO>(
+                        conn,
+                        query,
+                        new { IdInsumo = idInsumo },
+                        commandType: CommandType.StoredProcedure
+                    );
+
+                    return rpta.ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                var error = new Error();
+                error.Message = "InsumoLoteRepository - ObtenerLotesPorInsumo: " + ex.Message;
+                error.Exception = ex;
+                error.Operation = "ObtenerLotesPorInsumo";
+                error.Code = TiposError.NoEncontrado;
+
+                LogErp.EscribirBaseDatos(error);
+                throw;
+            }
+        }
     }
 }

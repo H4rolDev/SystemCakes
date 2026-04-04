@@ -1,13 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace H.DataAccess.Entidades
+﻿namespace H.DTOs
 {
-    public class InsumoLote: BaseEntity
+    public class InsumoLoteDTO
     {
+        public int Id { get; set; }
         public int IdInsumo { get; set; }
         public string NumeroLote { get; set; }
         public DateTime? FechaIngreso { get; set; }
@@ -15,5 +10,6 @@ namespace H.DataAccess.Entidades
         public decimal? CantidadInicial { get; set; }
         public decimal CantidadDisponible { get; set; }
         public decimal? CostoUnitario { get; set; }
+        public bool Activo { get; set; }
     }
 }

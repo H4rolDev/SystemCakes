@@ -17,5 +17,6 @@ namespace H.DataAccess.Repositorios
         TInsumo Update(Insumo entidad);
         Insumo GetById(int id);
         IEnumerable<InsumoListadoDTO> ObtenerCombo();
+        IEnumerable<InsumoLoteDTO> ObtenerLotesPorInsumo(int idInsumo);
     }
 }
