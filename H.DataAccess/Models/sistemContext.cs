@@ -24,12 +24,12 @@ public partial class sistemContext : DbContext
     public virtual DbSet<TCategoriaTorta> TCategoriaTorta { get; set; }
     public virtual DbSet<TTorta> TTorta { get; set; }
     public virtual DbSet<TTortaLote> TTortaLote { get; set; }
-    //public virtual DbSet<TUnidadMedida> TUnidadMedida { get; set; }
+    public virtual DbSet<TUnidadMedida> TUnidadMedida { get; set; }
     public virtual DbSet<TInsumo> TInsumo { get; set; }
-    //public virtual DbSet<TInsumoLote> TInsumoLote { get; set; }
-    //public virtual DbSet<TTipoMovimiento> TTipoMovimiento { get; set; }
-    //public virtual DbSet<TMovimientoInsumo> TMovimientoInsumo { get; set; }
-    //public virtual DbSet<TMovimientoTorta> TMovimientoTorta { get; set; }
+    public virtual DbSet<TInsumoLote> TInsumoLote { get; set; }
+    public virtual DbSet<TTipoMovimiento> TTipoMovimiento { get; set; }
+    public virtual DbSet<TMovimientoInsumo> TMovimientoInsumo { get; set; }
+    public virtual DbSet<TMovimientoTorta> TMovimientoTorta { get; set; }
     public virtual DbSet<TProduccion> TProduccion { get; set; }
     //public virtual DbSet<TProduccionDetalleInsumo> TProduccionDetalleInsumo { get; set; }
     //public virtual DbSet<TEstadoVenta> TEstadoVenta { get; set; }
@@ -248,7 +248,7 @@ public partial class sistemContext : DbContext
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
-        /*modelBuilder.Entity<TInsumoLote>(entity =>
+        modelBuilder.Entity<TInsumoLote>(entity =>
         {
             entity.ToTable("TInsumoLote");
 
@@ -274,6 +274,7 @@ public partial class sistemContext : DbContext
             entity.ToTable("TMovimientoInsumo");
 
             entity.Property(e => e.Cantidad).HasPrecision(10, 2).IsRequired();
+            entity.Property(e => e.Referencia);
             entity.Property(e => e.FechaMovimiento).HasColumnType("datetime").IsRequired();
 
             entity.HasOne<TInsumoLote>()
@@ -294,16 +295,16 @@ public partial class sistemContext : DbContext
             entity.Property(e => e.Cantidad).HasPrecision(10, 2).IsRequired();
             entity.Property(e => e.FechaMovimiento).HasColumnType("datetime").IsRequired();
 
-            entity.HasOne<TTortaLote>()
+            entity.HasOne<TTorta>()
                 .WithMany()
-                .HasForeignKey(e => e.IdTortaLote)
+                .HasForeignKey(e => e.IdTorta)
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne<TTipoMovimiento>()
                 .WithMany()
                 .HasForeignKey(e => e.IdTipoMovimiento)
                 .OnDelete(DeleteBehavior.Restrict);
-        });*/
+        });
 
         // =========================================================
         // PRODUCCIÓN
@@ -332,7 +333,7 @@ public partial class sistemContext : DbContext
             entity.HasOne<TProduccion>()
                 .WithMany()
                 .HasForeignKey(e => e.IdProduccion)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Cascade);Z
 
             entity.HasOne<TInsumoLote>()
                 .WithMany()

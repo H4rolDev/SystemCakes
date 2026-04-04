@@ -186,7 +186,7 @@ namespace H.DataAccess.Repositorios
         {
             try
             {
-                return entities.Any(w => w.Id == id && w.Activo == true);
+                return entities.Any(w => w.Id == id);
             }
             catch (Exception ex)
             {
@@ -236,7 +236,7 @@ namespace H.DataAccess.Repositorios
                 if (!Exist(id))
                     throw new Exception($"La entidad con Id {id} de {typeof(TEntity)} no existe");
 
-                TEntity entidad = entities.AsNoTracking().FirstOrDefault(w => w.Id == id && w.Activo == true);
+                TEntity entidad = entities.AsNoTracking().FirstOrDefault(w => w.Id == id);
 
                 return entidad;
             }
