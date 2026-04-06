@@ -81,13 +81,29 @@ namespace H.API.PRINCIPAL.Controllers
             }
         }
 
-        /*[HttpGet("ObtenerCombo")]
-        public IActionResult ObtenerCombo()
+        [HttpPost("InsertarMultipleTabla")]
+        public IActionResult InsertarMultipleTabla(InsertarProduccionDTO dto)
+        {
+            try
+            {
+            
+                var servicio = new ProduccionService(unitOfWork);
+                var respuesta = servicio.AddMultipleTabla(dto);
+                return Ok(respuesta);
+            }
+            catch (Exception ex) { 
+                return new ErrorResult(ex, User);
+            }
+        }
+
+        /*[HttpPut("ActualizarProduccion")]
+        public IActionResult ActualizarProduccion(UpdateProduccionDTO dto)
         {
             try
             {
                 var servicio = new ProduccionService(unitOfWork);
-                return Ok(servicio.ObtenerCombo());
+                var respuesta = servicio.UpdateProduccion(dto);
+                return Ok(respuesta);
             }
             catch (Exception ex)
             {
@@ -95,14 +111,57 @@ namespace H.API.PRINCIPAL.Controllers
             }
         }*/
 
-        [HttpPost("InsertarMultipleTabla")]
-        public IActionResult InsertarMultipleTabla(InsertarProduccionDTO dto)
+        [HttpPost("AjustarInsumo")]
+        public IActionResult AjustarInsumo(AjusteInsumoDTO dto)
         {
             try
             {
                 var servicio = new ProduccionService(unitOfWork);
-                var respuesta = servicio.AddMultipleTabla(dto);
-                return Ok(respuesta);
+                var rpta = servicio.AjustarInsumo(dto);
+                return Ok(rpta);
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult(ex, User);
+            }
+        }
+
+        [HttpPost("AjustarTorta")]
+        public IActionResult AjustarTorta(AjusteTortaDTO dto)
+        {
+            try
+            {
+                var servicio = new ProduccionService(unitOfWork);
+                var rpta = servicio.AjustarTorta(dto);
+                return Ok(rpta);
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult(ex, User);
+            }
+        }
+
+        [HttpGet("ObtenerProducciones")]
+        public IActionResult ObtenerProducciones()
+        {
+            try
+            {
+                var servicio = new ProduccionService(unitOfWork);
+                return Ok(servicio.ObtenerProducciones());
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult(ex, User);
+            }
+        }
+
+        [HttpGet("ObtenerDetalleProduccion")]
+        public IActionResult ObtenerDetalleProduccion(int id)
+        {
+            try
+            {
+                var servicio = new ProduccionService(unitOfWork);
+                return Ok(servicio.ObtenerDetalleProduccion(id));
             }
             catch (Exception ex)
             {

@@ -112,24 +112,58 @@ namespace H.DataAccess.Repositorios
             }
         }
 
-        public IEnumerable<ProduccionListadoDTO> ObtenerCombo()
+        public IEnumerable<ProduccionDetalleDTO> ObtenerDetalle(int idProduccion)
         {
             try
             {
-                var query = "SP_Produccion_ListadoActivo_Combo";
+                var query = "SP_ObtenerDetalleProduccion";
+
                 using (var conn = connectionFactory.GetConnection)
                 {
-                    var rpta = SqlMapper.Query<ProduccionListadoDTO>(conn, query, param: null, commandType: CommandType.StoredProcedure);
-                    return rpta.ToList();
+                    return SqlMapper.Query<ProduccionDetalleDTO>(
+                        conn,
+                        query,
+                        new { IdProduccion = idProduccion },
+                        commandType: CommandType.StoredProcedure
+                    ).ToList();
                 }
             }
             catch (Exception ex)
             {
                 var error = new Error();
-                error.Message = "ProduccionRepository" + ex.Message;
+                error.Message = "ProduccionDetalleInsumoRepository" + ex.Message;
                 error.Exception = ex;
-                error.Operation = "ObtenerCombo";
-                error.Code = TiposError.NoInsertado;
+                error.Operation = "GetById";
+                error.Code = TiposError.NoEncontrado;
+                error.Objeto = JsonConvert.SerializeObject(idProduccion);
+                LogErp.EscribirBaseDatos(error);
+
+                throw ex;
+            }
+        }
+
+        public IEnumerable<ProduccionCabeceraDTO> ObtenerProducciones()
+        {
+            try
+            {
+                var query = "SP_ObtenerProduccionCabecera";
+
+                using (var conn = connectionFactory.GetConnection)
+                {
+                    return SqlMapper.Query<ProduccionCabeceraDTO>(
+                        conn,
+                        query,
+                        commandType: CommandType.StoredProcedure
+                    ).ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                var error = new Error();
+                error.Message = "ProduccionDetalleInsumoRepository" + ex.Message;
+                error.Exception = ex;
+                error.Operation = "GetById";
+                error.Code = TiposError.NoEncontrado;
                 error.Objeto = JsonConvert.SerializeObject(null);
                 LogErp.EscribirBaseDatos(error);
 

@@ -16,6 +16,7 @@ namespace H.DataAccess.Repositorios
         int Delete(int id, string usuario);
         TProduccion Update(Produccion entidad);
         Produccion GetById(int id);
-        IEnumerable<ProduccionListadoDTO> ObtenerCombo();
+        IEnumerable<ProduccionDetalleDTO> ObtenerDetalle(int idProduccion);
+        IEnumerable<ProduccionCabeceraDTO> ObtenerProducciones();
     }
 }
