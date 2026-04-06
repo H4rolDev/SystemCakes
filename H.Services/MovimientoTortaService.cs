@@ -7,18 +7,18 @@ using Newtonsoft.Json;
 
 namespace H.Services
 {
-    public class MovimientoInsumoService: IMovimientoInsumoService
+    public class MovimientoTortaService: IMovimientoTortaService
     {
         private IUnitOfWork _unitOfWork;
-        public MovimientoInsumoService(IUnitOfWork unitOfWork)
+        public MovimientoTortaService(IUnitOfWork unitOfWork)
         {
             _unitOfWork = unitOfWork;
         }
-        public int Add(MovimientoInsumo entidad)
+        public int Add(MovimientoTorta entidad)
         {
             try
             {
-                var modelo = _unitOfWork.MovimientoInsumoRepository.Add(entidad);
+                var modelo = _unitOfWork.MovimientoTortaRepository.Add(entidad);
                 _unitOfWork.Commit();
                 return modelo.Id;
             }
@@ -36,18 +36,18 @@ namespace H.Services
             }
         }
 
-        public int Update(MovimientoInsumo entidad)
+        public int Update(MovimientoTorta entidad)
         {
             try
             {
-                var modelo = _unitOfWork.MovimientoInsumoRepository.Update(entidad);
+                var modelo = _unitOfWork.MovimientoTortaRepository.Update(entidad);
                 _unitOfWork.Commit();
                 return modelo.Id;
             }
             catch (Exception ex)
             {
                 var error = new Error();
-                error.Message = "MovimientoInsumoService" + ex.Message;
+                error.Message = "MovimientoTortaService" + ex.Message;
                 error.Exception = ex;
                 error.Operation = "Update";
                 error.Code = TiposError.NoInsertado;
@@ -62,14 +62,14 @@ namespace H.Services
         {
             try
             {
-                var rpta = _unitOfWork.MovimientoInsumoRepository.Delete(id, usuario);
+                var rpta = _unitOfWork.MovimientoTortaRepository.Delete(id, usuario);
                 _unitOfWork.Commit();
                 return rpta;
             }
             catch (Exception ex)
             {
                 var error = new Error();
-                error.Message = "MovimientoInsumoService" + ex.Message;
+                error.Message = "MovimientoTortaService" + ex.Message;
                 error.Exception = ex;
                 error.Operation = "Delete";
                 error.Code = TiposError.NoEliminado;
@@ -80,16 +80,16 @@ namespace H.Services
             }
         }
 
-        public MovimientoInsumo GetById(int id)
+        public MovimientoTorta GetById(int id)
         {
             try
             {
-                return _unitOfWork.MovimientoInsumoRepository.GetById(id);
+                return _unitOfWork.MovimientoTortaRepository.GetById(id);
             }
             catch (Exception ex)
             {
                 var error = new Error();
-                error.Message = "MovimientoInsumoService" + ex.Message;
+                error.Message = "MovimientoTortaService" + ex.Message;
                 error.Exception = ex;
                 error.Operation = "Update";
                 error.Code = TiposError.NoEncontrado;
@@ -100,36 +100,16 @@ namespace H.Services
             }
         }
 
-        public IEnumerable<MovimientoInsumoListadoDTO> ObtenerCombo()
+        public IEnumerable<MovimientoTortaListadoDTO> ObtenerCombo()
         {
             try
             {
-                return _unitOfWork.MovimientoInsumoRepository.ObtenerCombo();
+                return _unitOfWork.MovimientoTortaRepository.ObtenerCombo();
             }
             catch (Exception ex)
             {
                 var error = new Error();
-                error.Message = "MovimientoInsumoService" + ex.Message;
-                error.Exception = ex;
-                error.Operation = "ObtenerListadoActivos";
-                error.Code = TiposError.NoEncontrado;
-                error.Objeto = JsonConvert.SerializeObject(null);
-
-                LogErp.EscribirBaseDatos(error);
-                throw ex;
-            }
-        }
-
-        public IEnumerable<InsumoLoteListadoDTO> ObtenerInsumoLote()
-        {
-            try
-            {
-                return _unitOfWork.InsumoLoteRepository.ObtenerCombo();
-            }
-            catch (Exception ex)
-            {
-                var error = new Error();
-                error.Message = "MovimientoInsumoService" + ex.Message;
+                error.Message = "MovimientoTortaService" + ex.Message;
                 error.Exception = ex;
                 error.Operation = "ObtenerListadoActivos";
                 error.Code = TiposError.NoEncontrado;

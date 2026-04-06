@@ -1,13 +1,12 @@
 ﻿namespace H.DTOs
 {
-    public class MovimientoInsumoListadoDTO
+    public class MovimientoTortaListadoDTO
     {
         public int Id { get; set; }
         public int IdTipoMovimiento { get; set; }
         public string TipoMovimiento { get; set; }
-        public int IdInsumoLote { get; set; }
-        public string NumeroLote { get; set; }
-        public string Insumo { get; set; }
+        public int IdTorta { get; set; }
+        public string Torta { get; set; }
         public decimal Cantidad { get; set; }
         public DateTime FechaMovimiento { get; set; }
         public string Referencia { get; set; }

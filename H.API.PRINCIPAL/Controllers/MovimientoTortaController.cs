@@ -9,21 +9,21 @@ namespace H.API.PRINCIPAL.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class MovimientoInsumoController : ControllerBase
+    public class MovimientoTortaController : ControllerBase
     {
         private IUnitOfWork unitOfWork;
 
-        public MovimientoInsumoController(IUnitOfWork unitOfWork, ICloudinaryService cloudinaryService)
+        public MovimientoTortaController(IUnitOfWork unitOfWork, ICloudinaryService cloudinaryService)
         {
             this.unitOfWork = unitOfWork;
         }
 
         [HttpPost("Insertar")]
-        public IActionResult Insert([FromBody] MovimientoInsumo producto)
+        public IActionResult Insert([FromBody] MovimientoTorta producto)
         {
             try
             {
-                var servicio = new MovimientoInsumoService(unitOfWork);
+                var servicio = new MovimientoTortaService(unitOfWork);
                 producto.FechaCreacion = Fecha.Hoy;
                 producto.FechaModificacion = Fecha.Hoy;
                 var respuesta = servicio.Add(producto);
@@ -36,11 +36,11 @@ namespace H.API.PRINCIPAL.Controllers
         }
 
         [HttpPut("Modificar")]
-        public IActionResult Update([FromBody] MovimientoInsumo producto)
+        public IActionResult Update([FromBody] MovimientoTorta producto)
         {
             try
             {
-                var servicio = new MovimientoInsumoService(unitOfWork);
+                var servicio = new MovimientoTortaService(unitOfWork);
                 producto.FechaModificacion = Fecha.Hoy;
                 var respuesta = servicio.Update(producto);
                 return Ok(respuesta);
@@ -56,7 +56,7 @@ namespace H.API.PRINCIPAL.Controllers
         {
             try
             {
-                var servicio = new MovimientoInsumoService(unitOfWork);
+                var servicio = new MovimientoTortaService(unitOfWork);
                 var respuesta = servicio.Delete(id, usuario);
                 return Ok(respuesta);
             }
@@ -71,7 +71,7 @@ namespace H.API.PRINCIPAL.Controllers
         {
             try
             {
-                var servicio = new MovimientoInsumoService(unitOfWork);
+                var servicio = new MovimientoTortaService(unitOfWork);
                 return Ok(servicio.GetById(id));
             }
             catch (Exception ex)
@@ -85,22 +85,8 @@ namespace H.API.PRINCIPAL.Controllers
         {
             try
             {
-                var servicio = new MovimientoInsumoService(unitOfWork);
+                var servicio = new MovimientoTortaService(unitOfWork);
                 return Ok(servicio.ObtenerCombo());
-            }
-            catch (Exception ex)
-            {
-                return new ErrorResult(ex, User);
-            }
-        }
-
-        [HttpGet("ObtenerInsumoLote")]
-        public IActionResult ObtenerInsumoLote()
-        {
-            try
-            {
-                var servicio = new MovimientoInsumoService(unitOfWork);
-                return Ok(servicio.ObtenerInsumoLote());
             }
             catch (Exception ex)
             {
