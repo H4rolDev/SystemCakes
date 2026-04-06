@@ -36,7 +36,7 @@ namespace H.DataAccess.Models
         /// <summary>
         /// Costo unitario de insumo.
         /// </summary>
-        public decimal? CantidadDisponible { get; set; }
+        public decimal CantidadDisponible { get; set; }
         /// <summary>
         /// Costo unitario de insumo.
         /// </summary>

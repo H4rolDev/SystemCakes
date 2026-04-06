@@ -112,11 +112,11 @@ namespace H.DataAccess.Repositorios
             }
         }
 
-       /* public IEnumerable<InsumoLoteListadoDTO> ObtenerCombo()
+        public IEnumerable<InsumoLoteListadoDTO> ObtenerCombo()
         {
             try
             {
-                var query = "SP_Obtener_ListadoInsumoLotes_Combo";
+                var query = "SP_Obtener_ListadoInsumoLote_Combo";
                 using (var conn = connectionFactory.GetConnection)
                 {
                     var rpta = SqlMapper.Query<InsumoLoteListadoDTO>(conn, query, param: null, commandType: CommandType.StoredProcedure);
@@ -135,6 +135,6 @@ namespace H.DataAccess.Repositorios
 
                 throw ex;
             }
-        }*/
+        }
     }
 }

@@ -10,6 +10,6 @@ namespace H.DataAccess.Entidades
     {
         public int IdTorta { get; set; }
         public int IdInsumo { get; set; }
-        public int CantidadNecesaria { get; set; }
+        public int CantidadRequerida { get; set; }
     }
 }

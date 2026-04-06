@@ -16,6 +16,6 @@ namespace H.DataAccess.Repositorios
         int Delete(int id, string usuario);
         TInsumoLote Update(InsumoLote entidad);
         InsumoLote GetById(int id);
-        //IEnumerable<InsumoLoteListadoDTO> ObtenerCombo();
+        IEnumerable<InsumoLoteListadoDTO> ObtenerCombo();
     }
 }
