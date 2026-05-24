@@ -1,4 +1,4 @@
-﻿using H.DataAccess.Entidades;
+using H.DataAccess.Entidades;
 using H.DataAccess.Helpers;
 using H.Services;
 using H.DataAccess.Extension;
@@ -82,6 +82,20 @@ namespace H.API.PRINCIPAL.Controllers
 
         [HttpGet("ObtenerCombo")]
         public IActionResult ObtenerCombo()
+        {
+            try
+            {
+                var servicio = new TipoDocumentoService(unitOfWork);
+                return Ok(servicio.ObtenerCombo());
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult(ex, User);
+            }
+        }
+
+        [HttpGet("ObtenerListado")]
+        public IActionResult ObtenerListado()
         {
             try
             {

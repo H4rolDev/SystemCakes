@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -7,7 +7,7 @@ using AutoMapper;
 using H.DataAccess.Entidades;
 using H.DataAccess.Models;
 using H.DataAccess.Enums;
-using H.DataAccess.Infrastructure;
+using H.DataAccess.Infraestructure;
 using H.DataAccess.Log;
 using H.DataAccess.Repositorios;
 using Newtonsoft.Json;
@@ -112,16 +112,34 @@ namespace H.DataAccess.Repositorios
             }
         }
 
-        public IEnumerable<TortaListadoDTO> ObtenerCombo()
+public IEnumerable<TortaListadoDTO> ObtenerCombo()
         {
             try
             {
-                var query = "SP_Obtener_ListadoTorta_Combo";
-                using (var conn = connectionFactory.GetConnection)
-                {
-                    var rpta = SqlMapper.Query<TortaListadoDTO>(conn, query, param: null, commandType: CommandType.StoredProcedure);
-                    return rpta.ToList();
-                }
+                var connection = connectionFactory.GetConnection;
+                var sql = @"SELECT 
+                    t.Id, 
+                    t.IdCategoriaTorta,
+                    c.Nombre AS NombreCategoriaTorta,
+                    ISNULL(t.Nombre, '') AS Nombre, 
+                    ISNULL(t.Descripcion, '') AS Descripcion, 
+                    ISNULL(t.Cantidades, '') AS Cantidades, 
+                    ISNULL(t.PrecioVenta, 0) AS PrecioVenta, 
+                    ISNULL(t.ImagenUrl, '') AS ImagenUrl, 
+                    ISNULL(t.ImagenPublicId, '') AS ImagenPublicId, 
+                    ISNULL(t.EsPersonalizable, 0) AS EsPersonalizable, 
+                    t.StockDisponible, 
+                    CASE WHEN t.Activo = 1 THEN 'S' ELSE 'N' END AS Activo,
+                    t.FechaCreacion, 
+                    ISNULL(t.UsuarioCreacion, '') AS UsuarioCreacion, 
+                    t.FechaModificacion, 
+                    ISNULL(t.UsuarioModificacion, '') AS UsuarioModificacion
+                    FROM TTorta t
+                    INNER JOIN TCategoriaTorta c ON t.IdCategoriaTorta = c.Id
+                    WHERE t.Activo = 1";
+
+                var resultados = connection.Query<TortaListadoDTO>(sql);
+                return resultados;
             }
             catch (Exception ex)
             {
@@ -129,10 +147,9 @@ namespace H.DataAccess.Repositorios
                 error.Message = "TortaRepository" + ex.Message;
                 error.Exception = ex;
                 error.Operation = "ObtenerCombo";
-                error.Code = TiposError.NoInsertado;
+                error.Code = TiposError.NoEncontrado;
                 error.Objeto = JsonConvert.SerializeObject(null);
                 LogErp.EscribirBaseDatos(error);
-
                 throw ex;
             }
         }

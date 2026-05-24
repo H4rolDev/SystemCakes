@@ -1,5 +1,5 @@
-﻿using H.DataAccess;
-using H.DataAccess.Infrastructure;
+using H.DataAccess;
+using H.DataAccess.Infraestructure;
 using H.DataAccess.Repositorios;
 using H.DataAccess.UnitofWork;
 using H.Services;
@@ -24,7 +24,7 @@ builder.Services.AddDbContext<sistemContext>(options =>
 // ============================================
 // CONNECTION FACTORY (DAPPER)
 // ============================================
-builder.Services.AddScoped<H.DataAccess.Infrastructure.IConnectionFactory>(
+builder.Services.AddScoped<H.DataAccess.Infraestructure.IConnectionFactory>(
     provider => new ConnectionFactory(
         builder.Configuration.GetConnectionString("DefaultConnection")
     )
@@ -44,12 +44,14 @@ builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 // SERVICIOS
 // ============================================
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IEntradaInsumoService, EntradaInsumoService>();
 
 // ============================================
 // CONTROLLERS
 // ============================================
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddHttpClient();
 
 // Configuración de Cloudinary
 builder.Services.Configure<CloudinarySettings>(
@@ -88,9 +90,12 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("UI-FrontEnd", policy =>
     {
-        policy.WithOrigins("http://localhost:4200")
-              .AllowAnyHeader()
-              .AllowAnyMethod();
+        policy.WithOrigins(
+            "http://localhost:4200",
+            "https://tortasyani.netlify.app"
+        )
+        .AllowAnyHeader()
+        .AllowAnyMethod();
     });
 });
 
@@ -160,14 +165,14 @@ using (var scope = app.Services.CreateScope())
 // ============================================
 // PIPELINE
 // ============================================
-if (app.Environment.IsDevelopment())
-{
+//if (app.Environment.IsDevelopment())
+//{
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "H.API.PRINCIPAL v1");
     });
-}
+//}
 
 app.UseHttpsRedirection();
 

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -7,7 +7,7 @@ using AutoMapper;
 using H.DataAccess.Entidades;
 using H.DataAccess.Models;
 using H.DataAccess.Enums;
-using H.DataAccess.Infrastructure;
+using H.DataAccess.Infraestructure;
 using H.DataAccess.Log;
 using H.DataAccess.Repositorios;
 using Newtonsoft.Json;

@@ -1,10 +1,11 @@
-﻿using H.DataAccess.Entidades;
+using H.DataAccess.Entidades;
 using H.DataAccess.Enums;
 using H.DataAccess;
-using H.DataAccess.Infrastructure;
+using H.DataAccess.Infraestructure;
 using H.DataAccess.Log;
 using H.DataAccess.Models;
 using H.DataAccess.Repositorios;
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -26,6 +27,8 @@ namespace H.DataAccess.UnitofWork
             _connectionFactory = connectionFactory;
         }
 
+        public DbContext Context => _context;
+
         private IProductoRepository _ProductoRepository;
         private ITortaLoteRepository _TortaLoteRepository;
         private IClienteRepository _ClienteRepository;
@@ -45,6 +48,22 @@ namespace H.DataAccess.UnitofWork
         private IInsumoLoteRepository _InsumoLoteRepository;
         private ITipoMovimientoRepository _TipoMovimientoRepository;
         private IMovimientoInsumoRepository _MovimientoInsumoRepository;
+        private IMovimientoTortaRepository _MovimientoTortaRepository;
+        private IProduccionDetalleInsumoRepository _ProduccionDetalleInsumoRepository;
+        private IVentaRepository _VentaRepository;
+        private IVentaDetalleRepository _VentaDetalleRepository;
+        private ICancelacionVentaRepository _CancelacionVentaRepository;
+        private IPagoVentaRepository _PagoVentaRepository;
+        private IEntregaDeliveryRepository _EntregaDeliveryRepository;
+        private IComprobanteVentaRepository _ComprobanteVentaRepository;
+        private IMetodoPagoRepository _MetodoPagoRepository;
+        private IEstadoEntregaRepository _EstadoEntregaRepository;
+        private ITipoEntregaRepository _TipoEntregaRepository;
+        private IEstadoVentaRepository _EstadoVentaRepository;
+        private IProveedorRepository _ProveedorRepository;
+        private IEntradaInsumoRepository _EntradaInsumoRepository;
+        private IEntradaInsumoDetalleRepository _EntradaInsumoDetalleRepository;
+        private IMetaVentaRepository _MetaVentaRepository;
 
         IProductoRepository IUnitOfWork.ProductoRepository
         {
@@ -179,13 +198,124 @@ namespace H.DataAccess.UnitofWork
                 return _MovimientoInsumoRepository ?? new MovimientoInsumoRepository(_context, _connectionFactory);
             }
         }
+        IMovimientoTortaRepository IUnitOfWork.MovimientoTortaRepository
+        {
+            get
+            {
+                return _MovimientoTortaRepository ?? new MovimientoTortaRepository(_context, _connectionFactory);
+            }
+        }
+        IProduccionDetalleInsumoRepository IUnitOfWork.ProduccionDetalleInsumoRepository
+        {
+            get
+            {
+                return _ProduccionDetalleInsumoRepository ?? new ProduccionDetalleInsumoRepository(_context, _connectionFactory);
+            }
+        }
+        IVentaRepository IUnitOfWork.VentaRepository
+        {
+            get
+            {
+                return _VentaRepository ?? new VentaRepository(_context, _connectionFactory);
+            }
+        }
+        IVentaDetalleRepository IUnitOfWork.VentaDetalleRepository
+        {
+            get
+            {
+                return _VentaDetalleRepository ?? new VentaDetalleRepository(_context, _connectionFactory);
+            }
+        }
+        ICancelacionVentaRepository IUnitOfWork.CancelacionVentaRepository
+        {
+            get
+            {
+                return _CancelacionVentaRepository ?? new CancelacionVentaRepository(_context, _connectionFactory);
+            }
+        }
+        IPagoVentaRepository IUnitOfWork.PagoVentaRepository
+        {
+            get
+            {
+                return _PagoVentaRepository ?? new PagoVentaRepository(_context, _connectionFactory);
+            }
+        }
+        IEntregaDeliveryRepository IUnitOfWork.EntregaDeliveryRepository
+        {
+            get
+            {
+                return _EntregaDeliveryRepository ?? new EntregaDeliveryRepository(_context, _connectionFactory);
+            }
+        }
+        IComprobanteVentaRepository IUnitOfWork.ComprobanteVentaRepository
+        {
+            get
+            {
+                return _ComprobanteVentaRepository ?? new ComprobanteVentaRepository(_context, _connectionFactory);
+            }
+        }
+        IMetodoPagoRepository IUnitOfWork.MetodoPagoRepository
+        {
+            get
+            {
+                return _MetodoPagoRepository ?? new MetodoPagoRepository(_context);
+            }
+        }
+        IEstadoEntregaRepository IUnitOfWork.EstadoEntregaRepository
+        {
+            get
+            {
+                return _EstadoEntregaRepository ?? new EstadoEntregaRepository(_context, _connectionFactory);
+            }
+        }
+        ITipoEntregaRepository IUnitOfWork.TipoEntregaRepository
+        {
+            get
+            {
+                return _TipoEntregaRepository ?? new TipoEntregaRepository(_context, _connectionFactory);
+            }
+        }
+IEstadoVentaRepository IUnitOfWork.EstadoVentaRepository
+        {
+            get
+            {
+                return _EstadoVentaRepository ?? new EstadoVentaRepository(_context);
+            }
+        }
+        IProveedorRepository IUnitOfWork.ProveedorRepository
+        {
+            get
+            {
+                return _ProveedorRepository ?? new ProveedorRepository(_context, _connectionFactory);
+            }
+        }
+        IEntradaInsumoRepository IUnitOfWork.EntradaInsumoRepository
+        {
+            get
+            {
+                return _EntradaInsumoRepository ?? new EntradaInsumoRepository(_context, _connectionFactory);
+            }
+        }
+        IEntradaInsumoDetalleRepository IUnitOfWork.EntradaInsumoDetalleRepository
+        {
+            get
+            {
+                return _EntradaInsumoDetalleRepository ?? new EntradaInsumoDetalleRepository(_context, _connectionFactory);
+            }
+        }
+        IMetaVentaRepository IUnitOfWork.MetaVentaRepository
+        {
+            get
+            {
+                return _MetaVentaRepository ?? new MetaVentaRepository(_context, _connectionFactory);
+            }
+        }
 
         public void Commit()
         {
             try
             {
                 _context.SaveChanges();
-                //_context.Dispose();
             }
             catch (Exception ex)
             {

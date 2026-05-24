@@ -1,4 +1,5 @@
 ﻿using H.DataAccess.Entidades;
+using H.DataAccess.Models;
 using H.DTOs;
 
 namespace H.Services
@@ -9,7 +10,8 @@ namespace H.Services
         Task<RegisterResponseDTO> RegisterCliente(RegisterClienteRequestDTO request);
         Task<RegisterResponseDTO> RegisterAdministrador(RegisterAdministradorRequestDTO request);
         Task<bool> ValidarToken(string token);
-        public string GenerarToken(Usuario usuario, List<string> roles);
-        /*Task<bool> ExisteUsername(string username);*/
+        string GenerarToken(Usuario usuario, List<string> roles);
+        Task<bool> ExisteUsername(string username);
+        Task<int> CrearUsuarioConRol(TPersona persona, TUsuario usuario, int rolId);
     }
 }

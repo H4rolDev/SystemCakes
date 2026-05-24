@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -7,7 +7,7 @@ using AutoMapper;
 using H.DataAccess.Entidades;
 using H.DataAccess.Models;
 using H.DataAccess.Enums;
-using H.DataAccess.Infrastructure;
+using H.DataAccess.Infraestructure;
 using H.DataAccess.Log;
 using H.DataAccess.Repositorios;
 using Newtonsoft.Json;
@@ -116,12 +116,17 @@ namespace H.DataAccess.Repositorios
         {
             try
             {
-                var query = "SP_Persona_ListadoActivo_Combo";
-                using (var conn = connectionFactory.GetConnection)
-                {
-                    var rpta = SqlMapper.Query<PersonaListadoDTO>(conn, query, param: null, commandType: CommandType.StoredProcedure);
-                    return rpta.ToList();
-                }
+                return context.TPersona
+                    .Where(x => x.Activo)
+                    .Select(x => new PersonaListadoDTO
+                    {
+                        Id = x.Id,
+                        Nombres = x.Nombres,
+                        ApellidoPaterno = x.ApellidoPaterno,
+                        ApellidoMaterno = x.ApellidoMaterno,
+                        NumeroDocumento = x.NumeroDocumento
+                    })
+                    .ToList();
             }
             catch (Exception ex)
             {
@@ -129,10 +134,61 @@ namespace H.DataAccess.Repositorios
                 error.Message = "PersonaRepository" + ex.Message;
                 error.Exception = ex;
                 error.Operation = "ObtenerCombo";
-                error.Code = TiposError.NoInsertado;
+                error.Code = TiposError.NoEncontrado;
                 error.Objeto = JsonConvert.SerializeObject(null);
                 LogErp.EscribirBaseDatos(error);
+                throw ex;
+            }
+        }
 
+        public IEnumerable<PersonalDTO> ObtenerComboPersonal()
+        {
+            try
+            {
+                var clientes = context.TUsuarioRol
+                    .Where(ur => ur.IdRol == (int)RolEnum.Cliente)
+                    .Select(ur => ur.IdUsuario)
+                    .ToList();
+
+                var usuariosNoCliente = context.TUsuario
+                    .Where(u => u.Activo && !clientes.Contains(u.Id))
+                    .Select(u => u.IdPersona)
+                    .ToList();
+
+                var result = from p in context.TPersona
+                             join u in context.TUsuario on p.Id equals u.IdPersona
+                             join ur in context.TUsuarioRol on u.Id equals ur.IdUsuario
+                             join r in context.TRol on ur.IdRol equals r.Id
+                             where p.Activo && u.Activo && ur.Activo && usuariosNoCliente.Contains(p.Id)
+                             orderby p.Nombres
+                             select new PersonalDTO
+                             {
+                                 Id = p.Id,
+                                 Username = u.Username,
+                                 IdRol = r.Id,
+                                 NombreRol = r.Nombre,
+                                 IdTipoDocumento = p.IdTipoDocumento,
+                                 TipoDocumento = "",
+                                 NumeroDocumento = p.NumeroDocumento,
+                                 Nombres = p.Nombres,
+                                 ApellidoPaterno = p.ApellidoPaterno,
+                                 ApellidoMaterno = p.ApellidoMaterno,
+                                 Telefono = p.Telefono,
+                                 Direccion = p.Direccion,
+                                 Activo = p.Activo
+                             };
+
+                return result.ToList();
+            }
+            catch (Exception ex)
+            {
+                var error = new Error();
+                error.Message = "PersonaRepository" + ex.Message;
+                error.Exception = ex;
+                error.Operation = "ObtenerComboPersonal";
+                error.Code = TiposError.NoEncontrado;
+                error.Objeto = JsonConvert.SerializeObject(null);
+                LogErp.EscribirBaseDatos(error);
                 throw ex;
             }
         }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -16,7 +16,7 @@ namespace H.DataAccess.Repositorios
         int Delete(int id, string usuario);
         TUsuario Update(Usuario entidad);
         Usuario GetById(int id);
-        /*Usuario GetByUsername(string username);*/
-        /*IEnumerable<UsuarioListadoDTO> ObtenerCombo();*/
+        IEnumerable<ComboDTO> ObtenerComboClientes();
+        IEnumerable<ComboDTO> ObtenerComboDrivers();
     }
 }

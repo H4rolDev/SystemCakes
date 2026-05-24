@@ -18,6 +18,34 @@ namespace H.Services
         {
             try
             {
+                var lote = _unitOfWork.InsumoLoteRepository.GetById(entidad.IdInsumoLote);
+                if (lote == null)
+                    throw new Exception("Lote de insumo no encontrado.");
+
+                var insumo = _unitOfWork.InsumoRepository.GetById(lote.IdInsumo);
+                if (insumo == null)
+                    throw new Exception("Insumo no encontrado.");
+
+                bool esEntrada = EsTipoEntrada(entidad.IdTipoMovimiento);
+                bool esSalida = EsTipoSalida(entidad.IdTipoMovimiento);
+
+                if (esSalida && lote.CantidadDisponible < entidad.Cantidad)
+                    throw new Exception("Stock insuficiente en el lote.");
+
+                if (esEntrada)
+                {
+                    lote.CantidadDisponible += entidad.Cantidad;
+                    insumo.StockActual = (insumo.StockActual ?? 0) + entidad.Cantidad;
+                }
+                else if (esSalida)
+                {
+                    lote.CantidadDisponible -= entidad.Cantidad;
+                    insumo.StockActual = (insumo.StockActual ?? 0) - entidad.Cantidad;
+                }
+
+                _unitOfWork.InsumoLoteRepository.Update(lote);
+                _unitOfWork.InsumoRepository.Update(insumo);
+
                 var modelo = _unitOfWork.MovimientoInsumoRepository.Add(entidad);
                 _unitOfWork.Commit();
                 return modelo.Id;
@@ -25,7 +53,7 @@ namespace H.Services
             catch (Exception ex)
             {
                 var error = new Error();
-                error.Message = "AlmacenService" + ex.Message;
+                error.Message = "MovimientoInsumoService - Add: " + ex.Message;
                 error.Exception = ex;
                 error.Operation = "Add";
                 error.Code = TiposError.NoInsertado;
@@ -36,10 +64,72 @@ namespace H.Services
             }
         }
 
+        private bool EsTipoEntrada(int idTipoMovimiento)
+        {
+            return idTipoMovimiento == (int)TipoMovimientoEnum.Entrada
+                || idTipoMovimiento == (int)TipoMovimientoEnum.AjusteEntrada;
+        }
+
+        private bool EsTipoSalida(int idTipoMovimiento)
+        {
+            return idTipoMovimiento == (int)TipoMovimientoEnum.Salida
+                || idTipoMovimiento == (int)TipoMovimientoEnum.AjusteSalida
+                || idTipoMovimiento == (int)TipoMovimientoEnum.Merma
+                || idTipoMovimiento == (int)TipoMovimientoEnum.Regalo
+                || idTipoMovimiento == (int)TipoMovimientoEnum.Descarga
+                || idTipoMovimiento == (int)TipoMovimientoEnum.Donacion;
+        }
+
         public int Update(MovimientoInsumo entidad)
         {
             try
             {
+                var movimientoActual = _unitOfWork.MovimientoInsumoRepository.GetById(entidad.Id);
+                if (movimientoActual == null)
+                    throw new Exception("Movimiento no encontrado.");
+
+                var lote = _unitOfWork.InsumoLoteRepository.GetById(movimientoActual.IdInsumoLote);
+                if (lote == null)
+                    throw new Exception("Lote de insumo no encontrado.");
+
+                var insumo = _unitOfWork.InsumoRepository.GetById(lote.IdInsumo);
+                if (insumo == null)
+                    throw new Exception("Insumo no encontrado.");
+
+                bool eraEntrada = EsTipoEntrada(movimientoActual.IdTipoMovimiento);
+                bool eraSalida = EsTipoSalida(movimientoActual.IdTipoMovimiento);
+
+                if (eraEntrada)
+                {
+                    lote.CantidadDisponible -= movimientoActual.Cantidad;
+                    insumo.StockActual = (insumo.StockActual ?? 0) - movimientoActual.Cantidad;
+                }
+                else if (eraSalida)
+                {
+                    lote.CantidadDisponible += movimientoActual.Cantidad;
+                    insumo.StockActual = (insumo.StockActual ?? 0) + movimientoActual.Cantidad;
+                }
+
+                bool esEntrada = EsTipoEntrada(entidad.IdTipoMovimiento);
+                bool esSalida = EsTipoSalida(entidad.IdTipoMovimiento);
+
+                if (esSalida && lote.CantidadDisponible < entidad.Cantidad)
+                    throw new Exception("Stock insuficiente en el lote.");
+
+                if (esEntrada)
+                {
+                    lote.CantidadDisponible += entidad.Cantidad;
+                    insumo.StockActual = (insumo.StockActual ?? 0) + entidad.Cantidad;
+                }
+                else if (esSalida)
+                {
+                    lote.CantidadDisponible -= entidad.Cantidad;
+                    insumo.StockActual = (insumo.StockActual ?? 0) - entidad.Cantidad;
+                }
+
+                _unitOfWork.InsumoLoteRepository.Update(lote);
+                _unitOfWork.InsumoRepository.Update(insumo);
+
                 var modelo = _unitOfWork.MovimientoInsumoRepository.Update(entidad);
                 _unitOfWork.Commit();
                 return modelo.Id;
@@ -47,7 +137,7 @@ namespace H.Services
             catch (Exception ex)
             {
                 var error = new Error();
-                error.Message = "MovimientoInsumoService" + ex.Message;
+                error.Message = "MovimientoInsumoService - Update: " + ex.Message;
                 error.Exception = ex;
                 error.Operation = "Update";
                 error.Code = TiposError.NoInsertado;
@@ -62,6 +152,35 @@ namespace H.Services
         {
             try
             {
+                var movimiento = _unitOfWork.MovimientoInsumoRepository.GetById(id);
+                if (movimiento == null)
+                    throw new Exception("Movimiento no encontrado.");
+
+                var lote = _unitOfWork.InsumoLoteRepository.GetById(movimiento.IdInsumoLote);
+                if (lote == null)
+                    throw new Exception("Lote de insumo no encontrado.");
+
+                var insumo = _unitOfWork.InsumoRepository.GetById(lote.IdInsumo);
+                if (insumo == null)
+                    throw new Exception("Insumo no encontrado.");
+
+                bool eraEntrada = EsTipoEntrada(movimiento.IdTipoMovimiento);
+                bool eraSalida = EsTipoSalida(movimiento.IdTipoMovimiento);
+
+                if (eraEntrada)
+                {
+                    lote.CantidadDisponible -= movimiento.Cantidad;
+                    insumo.StockActual = (insumo.StockActual ?? 0) - movimiento.Cantidad;
+                }
+                else if (eraSalida)
+                {
+                    lote.CantidadDisponible += movimiento.Cantidad;
+                    insumo.StockActual = (insumo.StockActual ?? 0) + movimiento.Cantidad;
+                }
+
+                _unitOfWork.InsumoLoteRepository.Update(lote);
+                _unitOfWork.InsumoRepository.Update(insumo);
+
                 var rpta = _unitOfWork.MovimientoInsumoRepository.Delete(id, usuario);
                 _unitOfWork.Commit();
                 return rpta;
@@ -69,7 +188,7 @@ namespace H.Services
             catch (Exception ex)
             {
                 var error = new Error();
-                error.Message = "MovimientoInsumoService" + ex.Message;
+                error.Message = "MovimientoInsumoService - Delete: " + ex.Message;
                 error.Exception = ex;
                 error.Operation = "Delete";
                 error.Code = TiposError.NoEliminado;

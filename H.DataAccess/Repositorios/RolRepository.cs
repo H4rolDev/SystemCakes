@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -7,7 +7,7 @@ using AutoMapper;
 using H.DataAccess.Entidades;
 using H.DataAccess.Models;
 using H.DataAccess.Enums;
-using H.DataAccess.Infrastructure;
+using H.DataAccess.Infraestructure;
 using H.DataAccess.Log;
 using H.DataAccess.Repositorios;
 using Newtonsoft.Json;
@@ -116,12 +116,10 @@ namespace H.DataAccess.Repositorios
         {
             try
             {
-                var query = "SP_Rol_ListadoActivo_Combo";
-                using (var conn = connectionFactory.GetConnection)
-                {
-                    var rpta = SqlMapper.Query<RolListadoDTO>(conn, query, param: null, commandType: CommandType.StoredProcedure);
-                    return rpta.ToList();
-                }
+                return context.TRol
+                    .Where(x => x.Activo)
+                    .Select(x => new RolListadoDTO { Id = x.Id, Nombre = x.Nombre })
+                    .ToList();
             }
             catch (Exception ex)
             {
@@ -130,6 +128,29 @@ namespace H.DataAccess.Repositorios
                 error.Exception = ex;
                 error.Operation = "ObtenerCombo";
                 error.Code = TiposError.NoInsertado;
+                error.Objeto = JsonConvert.SerializeObject(null);
+                LogErp.EscribirBaseDatos(error);
+
+                throw ex;
+            }
+        }
+
+        public IEnumerable<RolListadoDTO> ObtenerListado()
+        {
+            try
+            {
+                return context.TRol
+                    .Where(x => x.Activo)
+                    .Select(x => new RolListadoDTO { Id = x.Id, Nombre = x.Nombre })
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                var error = new Error();
+                error.Message = "RolRepository" + ex.Message;
+                error.Exception = ex;
+                error.Operation = "ObtenerListado";
+                error.Code = TiposError.NoEncontrado;
                 error.Objeto = JsonConvert.SerializeObject(null);
                 LogErp.EscribirBaseDatos(error);
 

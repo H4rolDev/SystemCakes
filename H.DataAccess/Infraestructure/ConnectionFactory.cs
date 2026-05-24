@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace H.DataAccess.Infrastructure
+namespace H.DataAccess.Infraestructure
 {
     public class ConnectionFactory : IConnectionFactory
     {
@@ -52,6 +52,29 @@ namespace H.DataAccess.Infrastructure
                     return null;
                 }
 
+            }
+        }
+
+        public IDbConnection CreateConnection()
+        {
+            try
+            {
+                DbProviderFactories.RegisterFactory("System.Data.SqlClient", SqlClientFactory.Instance);
+                var factory = DbProviderFactories.GetFactory("System.Data.SqlClient");
+
+                var connection = factory.CreateConnection();
+                if (connection != null)
+                {
+                    connection.ConnectionString = _connectionString;
+                    connection.Open();
+                    return connection;
+                }
+
+                return null;
+            }
+            catch
+            {
+                return null;
             }
         }
     }

@@ -165,5 +165,103 @@ namespace H.API.PRINCIPAL.Controllers
                 return new ErrorResult(ex, User);
             }
         }
+
+        /// <summary>
+        /// Generar usuarios de prueba para todos los roles
+        /// </summary>
+        [HttpPost("GenerarUsuariosPrueba")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GenerarUsuariosPrueba()
+        {
+            try
+            {
+                var resultados = new List<object>();
+
+                // Contraseña base para todos los usuarios
+                const string passwordBase = "123456";
+
+                // Lista de usuarios a crear
+                var usuariosPrueba = new[]
+                {
+                    new { username = "admin", nombres = "Juan", apellidoPaterno = "Perez", rolId = 1, rolNombre = "Administrador", documento = "10000001" },
+                    new { username = "atencion", nombres = "Maria", apellidoPaterno = "Lopez", rolId = 2, rolNombre = "Atención", documento = "10000002" },
+                    new { username = "produccion", nombres = "Carlos", apellidoPaterno = "Mendoza", rolId = 3, rolNombre = "Producción", documento = "10000003" },
+                    new { username = "repartidor1", nombres = "Pedro", apellidoPaterno = "Torres", rolId = 4, rolNombre = "Repartidor", documento = "10000004" },
+                    new { username = "repartidor2", nombres = "Luis", apellidoPaterno = "Garcia", rolId = 4, rolNombre = "Repartidor", documento = "10000005" },
+                    new { username = "cliente1", nombres = "Ana", apellidoPaterno = "Ramirez", rolId = 5, rolNombre = "Cliente", documento = "10000006" }
+                };
+
+                foreach (var u in usuariosPrueba)
+                {
+                    try
+                    {
+                        // Verificar si ya existe el usuario
+                        var existingUser = _authService.ExisteUsername(u.username).Result;
+                        if (existingUser)
+                        {
+                            resultados.Add(new { username = u.username, estado = "Ya existe", rol = u.rolNombre });
+                            continue;
+                        }
+
+                        // Crear hash de contraseña
+                        SecurityHelper.CreatePasswordHash(passwordBase, out string passwordHash, out string passwordSalt);
+
+                        // Crear Persona
+                        var persona = new TPersona
+                        {
+                            IdTipoDocumento = 1,
+                            NumeroDocumento = u.documento,
+                            Nombres = u.nombres,
+                            ApellidoPaterno = u.apellidoPaterno,
+                            ApellidoMaterno = "",
+                            Telefono = "999000000",
+                            Direccion = "Dirección de prueba",
+                            Activo = true,
+                            UsuarioCreacion = "SYSTEM",
+                            FechaCreacion = DateTime.Now
+                        };
+
+                        // Crear Usuario
+                        var usuario = new TUsuario
+                        {
+                            Username = u.username,
+                            PasswordHash = passwordHash,
+                            PasswordSalt = passwordSalt,
+                            Activo = true,
+                            UsuarioCreacion = "SYSTEM",
+                            FechaCreacion = DateTime.Now
+                        };
+
+                        // Aquí usamos el método del servicio
+                        var idUsuario = await _authService.CrearUsuarioConRol(persona, usuario, u.rolId);
+                        
+                        resultados.Add(new { 
+                            username = u.username, 
+                            password = passwordBase,
+                            estado = "Creado exitosamente", 
+                            rol = u.rolNombre 
+                        });
+                    }
+                    catch (Exception exUser)
+                    {
+                        var innerMsg = exUser.InnerException?.Message ?? exUser.Message;
+                        resultados.Add(new { 
+                            username = u.username, 
+                            estado = $"Error: {innerMsg}", 
+                            rol = u.rolNombre 
+                        });
+                    }
+                }
+
+                return Ok(new { 
+                    mensaje = "Usuarios de prueba generados", 
+                    resultados 
+                });
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult(ex, User);
+            }
+        }
     }
 }

@@ -109,6 +109,9 @@ namespace H.Services
                 if (dto == null)
                     throw new Exception("DTO nulo.");
 
+                if (dto.IdTorta <= 0)
+                    throw new Exception("Torta inválida.");
+
                 if (dto.CantidadProducida <= 0)
                     throw new Exception("Cantidad inválida.");
 
@@ -116,6 +119,10 @@ namespace H.Services
                     throw new Exception("Usuario requerido.");
 
                 var fechaActual = Fecha.Hoy;
+
+                var torta = _unitOfWork.TortaRepository.GetById(dto.IdTorta);
+                if (torta == null)
+                    throw new Exception("La torta no existe.");
 
                 var receta = _unitOfWork.RecetaTortaRepository.GetBy(x => x.IdTorta == dto.IdTorta).ToList();
 
@@ -133,7 +140,7 @@ namespace H.Services
                         .GetBy(x => x.IdInsumo == item.IdInsumo
                                  && x.Activo
                                  && x.CantidadDisponible > 0
-                                 && (x.FechaVencimiento == null || x.FechaVencimiento.Value.Date >= hoy))
+                                 && (!x.FechaVencimiento.HasValue || x.FechaVencimiento.Value.Date >= hoy))
                         .OrderBy(x => x.FechaVencimiento)
                         .ToList();
 
@@ -141,8 +148,12 @@ namespace H.Services
 
                     var insumo = _unitOfWork.InsumoRepository.GetById(item.IdInsumo);
 
+                    if (insumo == null)
+                        throw new Exception($"El insumo con ID {item.IdInsumo} no existe.");
+
                     if (stockTotal < cantidadNecesaria)
                         throw new Exception($"Stock insuficiente para insumo {insumo.Nombre}");
+
                 }
 
                 var produccion = new TProduccion
@@ -172,11 +183,13 @@ namespace H.Services
                         .GetBy(x => x.IdInsumo == item.IdInsumo
                                  && x.Activo
                                  && x.CantidadDisponible > 0
-                                 && (x.FechaVencimiento == null
+                                 && (!x.FechaVencimiento.HasValue
                                      || x.FechaVencimiento.Value.Date >= hoy))
                         .ToList()
                         .OrderBy(x => x.FechaVencimiento ?? DateTime.MaxValue)
                         .ToList();
+
+                    var insumoProd = _unitOfWork.InsumoRepository.GetById(item.IdInsumo);
 
                     foreach (var lote in lotes)
                     {
@@ -188,6 +201,14 @@ namespace H.Services
                         lote.CantidadDisponible -= cantidadUsada;
 
                         _unitOfWork.InsumoLoteRepository.Update(lote);
+
+                        if (insumoProd != null)
+                        {
+                            insumoProd.StockActual = (insumoProd.StockActual ?? 0) - cantidadUsada;
+                            insumoProd.UsuarioModificacion = dto.UsuarioCreacion;
+                            insumoProd.FechaModificacion = fechaActual;
+                            _unitOfWork.InsumoRepository.Update(insumoProd);
+                        }
 
                         var movimiento = new TMovimientoInsumo
                         {
@@ -238,14 +259,14 @@ namespace H.Services
 
                 _unitOfWork.MovimientoTortaRepository.Add(movimientoTorta);
 
-                var torta = _unitOfWork.TortaRepository.GetById(dto.IdTorta);
+                var tortaActualizar = _unitOfWork.TortaRepository.GetById(dto.IdTorta);
 
-                if (torta == null)
+                if (tortaActualizar == null)
                     throw new Exception("Torta no existe.");
 
-                torta.StockDisponible += (int)dto.CantidadProducida;
+                tortaActualizar.StockDisponible += (int)dto.CantidadProducida;
 
-                _unitOfWork.TortaRepository.Update(torta);
+                _unitOfWork.TortaRepository.Update(tortaActualizar);
 
                 _unitOfWork.Commit();
 
@@ -308,14 +329,21 @@ namespace H.Services
                     throw new Exception("El lote no tiene suficiente stock.");
 
                 if (dto.EsEntrada)
+                {
                     lote.CantidadDisponible += dto.Cantidad;
+                    insumo.StockActual = (insumo.StockActual ?? 0) + dto.Cantidad;
+                }
                 else
+                {
                     lote.CantidadDisponible -= dto.Cantidad;
+                    insumo.StockActual = (insumo.StockActual ?? 0) - dto.Cantidad;
+                }
 
                 lote.UsuarioModificacion = dto.Usuario;
                 lote.FechaModificacion = fechaActual;
 
                 _unitOfWork.InsumoLoteRepository.Update(lote);
+                _unitOfWork.InsumoRepository.Update(insumo);
 
                 var movimiento = new TMovimientoInsumo
                 {

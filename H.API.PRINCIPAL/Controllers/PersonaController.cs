@@ -1,8 +1,9 @@
-﻿using H.DataAccess.Entidades;
+using H.DataAccess.Entidades;
 using H.DataAccess.Helpers;
 using H.Services;
 using H.DataAccess.Extension;
 using H.DataAccess.UnitofWork;
+using H.DTOs;
 using Microsoft.AspNetCore.Mvc;
 
 namespace H.API.PRINCIPAL.Controllers
@@ -87,6 +88,35 @@ namespace H.API.PRINCIPAL.Controllers
             {
                 var servicio = new PersonaService(unitOfWork);
                 return Ok(servicio.ObtenerCombo());
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult(ex, User);
+            }
+        }
+
+        [HttpPut("Actualizar")]
+        public IActionResult Actualizar([FromBody] ActualizarPersonaDTO dto)
+        {
+            try
+            {
+                var persona = unitOfWork.PersonaRepository.GetById(dto.Id);
+                if (persona == null)
+                    return NotFound(new { mensaje = "Persona no encontrada" });
+
+                persona.IdTipoDocumento = dto.IdTipoDocumento;
+                persona.NumeroDocumento = dto.NumeroDocumento;
+                persona.Nombres = dto.Nombres;
+                persona.ApellidoPaterno = dto.ApellidoPaterno;
+                persona.ApellidoMaterno = dto.ApellidoMaterno;
+                persona.Telefono = dto.Telefono;
+                persona.Direccion = dto.Direccion;
+                persona.FechaModificacion = H.DataAccess.Helpers.Fecha.Hoy;
+
+                unitOfWork.PersonaRepository.Update(persona);
+                unitOfWork.Commit();
+
+                return Ok(new { success = true, mensaje = "Datos actualizados correctamente" });
             }
             catch (Exception ex)
             {

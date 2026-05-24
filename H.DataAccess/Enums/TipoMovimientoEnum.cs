@@ -12,6 +12,12 @@ namespace H.DataAccess.Enums
         Salida = 2,
         Produccion = 3,
         AjusteEntrada = 4,
-        AjusteSalida = 5
+        AjusteSalida = 5,
+        Venta = 6,
+        Anulacion = 7,
+        Merma = 8,
+        Regalo = 9,
+        Descarga = 10,
+        Donacion = 11
     }
 }

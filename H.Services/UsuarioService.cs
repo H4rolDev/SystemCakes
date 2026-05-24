@@ -1,4 +1,4 @@
-﻿using H.DataAccess.Entidades;
+using H.DataAccess.Entidades;
 using H.DataAccess.Enums;
 using H.DataAccess.Log;
 using H.DataAccess.UnitofWork;
@@ -100,24 +100,44 @@ namespace H.Services
             }
         }
 
-        /*public IEnumerable<UsuarioListadoDTO> ObtenerCombo()
-		{
-			try
-			{
-				return _unitOfWork.UsuarioRepository.ObtenerCombo();
-			}
-			catch (Exception ex)
-			{
-				var error = new Error();
-				error.Message = "UsuarioService" + ex.Message;
-				error.Exception = ex;
-				error.Operation = "ObtenerListadoActivos";
-				error.Code = TiposError.NoEncontrado;
-				error.Objeto = JsonConvert.SerializeObject(null);
+public IEnumerable<ComboDTO> ObtenerComboClientes()
+ 		{
+ 			try
+ 			{
+ 				return _unitOfWork.UsuarioRepository.ObtenerComboClientes();
+ 			}
+ 			catch (Exception ex)
+ 			{
+ 				var error = new Error();
+ 				error.Message = "UsuarioService" + ex.Message;
+ 				error.Exception = ex;
+ 				error.Operation = "ObtenerComboClientes";
+ 				error.Code = TiposError.NoEncontrado;
+ 				error.Objeto = JsonConvert.SerializeObject(null);
 
-				LogErp.EscribirBaseDatos(error);
-				throw ex;
-			}
-		}*/
+ 				LogErp.EscribirBaseDatos(error);
+ 				throw ex;
+ 			}
+ 		}
+
+        public IEnumerable<ComboDTO> ObtenerComboDrivers()
+ 		{
+ 			try
+ 			{
+ 				return _unitOfWork.UsuarioRepository.ObtenerComboDrivers();
+ 			}
+ 			catch (Exception ex)
+ 			{
+ 				var error = new Error();
+ 				error.Message = "UsuarioService" + ex.Message;
+ 				error.Exception = ex;
+ 				error.Operation = "ObtenerComboDrivers";
+ 				error.Code = TiposError.NoEncontrado;
+ 				error.Objeto = JsonConvert.SerializeObject(null);
+
+ 				LogErp.EscribirBaseDatos(error);
+ 				throw ex;
+ 			}
+ 		}
     }
 }

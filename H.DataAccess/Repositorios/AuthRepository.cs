@@ -1,4 +1,4 @@
-﻿// H.DataAccess/Repositorios/AuthRepository.cs
+// H.DataAccess/Repositorios/AuthRepository.cs
 using Dapper;
 using H.DataAccess.Entidades;
 using H.DataAccess.Enums;
@@ -7,7 +7,7 @@ using H.DataAccess.Models;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using System.Data;
-using H.DataAccess.Infrastructure;
+using H.DataAccess.Infraestructure;
 using H.DataAccess.Helpers;
 
 namespace H.DataAccess.Repositorios
@@ -132,7 +132,7 @@ namespace H.DataAccess.Repositorios
                     var rolCliente = new TUsuarioRol
                     {
                         IdUsuario = nuevoUsuario.Id,
-                        IdRol = 2,
+                        IdRol = (int)RolEnum.Cliente,
                         Activo = true,
                         UsuarioCreacion = usuario.Username,
                         FechaCreacion = Fecha.Hoy
@@ -302,7 +302,7 @@ namespace H.DataAccess.Repositorios
                     var rolAdmin = new TUsuarioRol
                     {
                         IdUsuario = nuevoUsuario.Id,
-                        IdRol = 1, // Rol Administrador
+                        IdRol = (int)RolEnum.Administrador,
                         Estado = true,
                         UsuarioCreacion = "SYSTEM",
                         FechaCreacion = Fecha.Hoy
@@ -384,7 +384,7 @@ namespace H.DataAccess.Repositorios
                     var rolAdmin = new TUsuarioRol
                     {
                         IdUsuario = nuevoUsuario.Id,
-                        IdRol = 1, // Rol Administrador
+                        IdRol = (int)RolEnum.Administrador,
                         Activo = true,
                         UsuarioCreacion = usuario.UsuarioCreacion,
                         FechaCreacion = DateTime.Now,

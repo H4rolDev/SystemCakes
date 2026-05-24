@@ -1,4 +1,4 @@
-﻿using H.DataAccess.Entidades;
+using H.DataAccess.Entidades;
 using H.DTOs;
 
 namespace H.Services
@@ -10,5 +10,6 @@ namespace H.Services
         int Delete(int id, string usuario);
         Rol GetById(int id);
         IEnumerable<RolListadoDTO> ObtenerCombo();
+        IEnumerable<RolListadoDTO> ObtenerListado();
     }
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -17,5 +17,6 @@ namespace H.DataAccess.Repositorios
         TPersona Update(Persona entidad);
         Persona GetById(int id);
         IEnumerable<PersonaListadoDTO> ObtenerCombo();
+        IEnumerable<PersonalDTO> ObtenerComboPersonal();
     }
 }

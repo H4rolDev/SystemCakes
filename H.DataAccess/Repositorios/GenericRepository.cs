@@ -1,11 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using System.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using H.DataAccess.Infrastructure;
+using H.DataAccess.Infraestructure;
 using System.Linq.Expressions;
 using H.DataAccess;
 using H.DataAccess.Log;
@@ -15,7 +15,7 @@ namespace H.DataAccess.Repositorios
     public class GenericRepository<TEntity> : IGenericRepository<TEntity> where TEntity : BaseEntity
     {
         internal readonly IConnectionFactory connectionFactory;
-        private sistemContext context;
+        protected sistemContext context;
         internal DbSet<TEntity> entities;
         //Enlazar a EF
 

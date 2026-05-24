@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -17,5 +17,6 @@ namespace H.DataAccess.Repositorios
         TRol Update(Rol entidad);
         Rol GetById(int id);
         IEnumerable<RolListadoDTO> ObtenerCombo();
+        IEnumerable<RolListadoDTO> ObtenerListado();
     }
 }

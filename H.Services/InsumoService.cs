@@ -162,27 +162,8 @@ namespace H.Services
                 if (dto == null)
                     throw new Exception("El objeto no puede ser nulo.");
 
-                if (dto.CantidadInicial <= 0)
-                    throw new Exception("Cantidad inicial inválida.");
-
-                if (dto.CantidadDisponible <= 0)
-                    throw new Exception("Cantidad disponible inválida.");
-
-                if (dto.CantidadDisponible > dto.CantidadInicial)
-                    throw new Exception("La cantidad disponible no puede ser mayor a la inicial.");
-
-                if (dto.CostoUnitario <= 0)
-                    throw new Exception("Costo unitario inválido.");
-
                 if (string.IsNullOrWhiteSpace(dto.Usuario))
                     throw new Exception("Usuario requerido.");
-
-                var nombre = dto.Nombre.Trim().ToLower();
-
-                var existe = _unitOfWork.InsumoRepository.GetAll().Any(x => x.Nombre.ToLower() == nombre && x.Activo);
-
-                if (existe)
-                    throw new Exception("El insumo ya está registrado.");
 
                 var fechaActual = Fecha.Hoy;
 
@@ -196,6 +177,14 @@ namespace H.Services
                 {
                     if (string.IsNullOrWhiteSpace(dto.Nombre))
                         throw new Exception("Nombre del insumo requerido.");
+
+                    if (dto.IdUnidadMedida <= 0)
+                        throw new Exception("Unidad de medida requerida.");
+
+                    var nombre = dto.Nombre.Trim().ToLower();
+                    var existe = _unitOfWork.InsumoRepository.GetAll().Any(x => x.Nombre.ToLower() == nombre && x.Activo);
+                    if (existe)
+                        throw new Exception("El insumo ya está registrado.");
 
                     var insumo = new TInsumo
                     {
@@ -217,58 +206,77 @@ namespace H.Services
                     idInsumo = insumo.Id;
                 }
 
-                var insumoLote = new TInsumoLote
+                var cantidadInicial = dto.CantidadInicial ?? 0;
+                var cantidadDisponible = dto.CantidadDisponible ?? 0;
+                var costoUnitario = dto.CostoUnitario ?? 0;
+
+                if (cantidadInicial > 0 || cantidadDisponible > 0 || costoUnitario > 0)
                 {
-                    IdInsumo = idInsumo,
-                    NumeroLote = null,
-                    FechaIngreso = fechaActual,
-                    FechaVencimiento = dto.FechaVencimiento,
-                    CantidadInicial = dto.CantidadInicial,
-                    CantidadDisponible = dto.CantidadDisponible,
-                    CostoUnitario = dto.CostoUnitario,
-                    Activo = true,
-                    UsuarioCreacion = dto.Usuario,
-                    UsuarioModificacion = dto.Usuario,
-                    FechaCreacion = fechaActual,
-                    FechaModificacion = fechaActual
-                };
+                    var insumoLote = new TInsumoLote
+                    {
+                        IdInsumo = idInsumo,
+                        NumeroLote = null,
+                        FechaIngreso = fechaActual,
+                        FechaVencimiento = dto.FechaVencimiento,
+                        CantidadInicial = cantidadInicial,
+                        CantidadDisponible = cantidadDisponible,
+                        CostoUnitario = costoUnitario,
+                        Activo = true,
+                        UsuarioCreacion = dto.Usuario,
+                        UsuarioModificacion = dto.Usuario,
+                        FechaCreacion = fechaActual,
+                        FechaModificacion = fechaActual
+                    };
 
-                _unitOfWork.InsumoLoteRepository.Add(insumoLote);
-                _unitOfWork.Commit();
+                    _unitOfWork.InsumoLoteRepository.Add(insumoLote);
+                    _unitOfWork.Commit();
 
-                var idInsumoLote = insumoLote.Id;
+                    var idInsumoLote = insumoLote.Id;
 
-                insumoLote.NumeroLote = $"LOT-{idInsumoLote:D6}";
-                _unitOfWork.InsumoLoteRepository.Update(insumoLote);
+                    insumoLote.NumeroLote = $"LOT-{idInsumoLote:D6}";
+                    _unitOfWork.InsumoLoteRepository.Update(insumoLote);
 
-                var movimiento = new TMovimientoInsumo
-                {
-                    IdTipoMovimiento = (int)TipoMovimientoEnum.Entrada,
-                    IdInsumoLote = idInsumoLote,
-                    Cantidad = dto.CantidadDisponible,
-                    FechaMovimiento = fechaActual,
-                    Referencia = null,
-                    Activo = true,
-                    UsuarioCreacion = dto.Usuario,
-                    UsuarioModificacion = dto.Usuario,
-                    FechaCreacion = fechaActual,
-                    FechaModificacion = fechaActual
-                };
+                    if (cantidadDisponible > 0)
+                    {
+                        var movimiento = new TMovimientoInsumo
+                        {
+                            IdTipoMovimiento = (int)TipoMovimientoEnum.Entrada,
+                            IdInsumoLote = idInsumoLote,
+                            Cantidad = cantidadDisponible,
+                            FechaMovimiento = fechaActual,
+                            Referencia = null,
+                            Activo = true,
+                            UsuarioCreacion = dto.Usuario,
+                            UsuarioModificacion = dto.Usuario,
+                            FechaCreacion = fechaActual,
+                            FechaModificacion = fechaActual
+                        };
 
-                _unitOfWork.MovimientoInsumoRepository.Add(movimiento);
+                        _unitOfWork.MovimientoInsumoRepository.Add(movimiento);
+                    }
 
-                _unitOfWork.Commit();
+                    var insumoActual = _unitOfWork.InsumoRepository.GetById(idInsumo);
+                    if (insumoActual != null)
+                    {
+                        insumoActual.StockActual = (insumoActual.StockActual ?? 0) + cantidadDisponible;
+                        insumoActual.UsuarioModificacion = dto.Usuario;
+                        insumoActual.FechaModificacion = fechaActual;
+                        _unitOfWork.InsumoRepository.Update(insumoActual);
+                    }
 
-                return idInsumoLote;
+                    _unitOfWork.Commit();
+                }
+
+                return idInsumo;
             }
             catch (Exception ex)
             {
                 var error = new Error();
                 error.Message = "InsumoService" + ex.Message;
                 error.Exception = ex;
-                error.Operation = "ObtenerListadoActivos";
-                error.Code = TiposError.NoEncontrado;
-                error.Objeto = JsonConvert.SerializeObject(null);
+                error.Operation = "InsertarLoteInsumo";
+                error.Code = TiposError.NoInsertado;
+                error.Objeto = JsonConvert.SerializeObject(dto);
 
                 LogErp.EscribirBaseDatos(error);
                 throw;
@@ -301,15 +309,15 @@ namespace H.Services
                 var cantidadAnterior = lote.CantidadDisponible;
 
                 lote.FechaVencimiento = dto.FechaVencimiento;
-                lote.CostoUnitario = dto.CostoUnitario;
-                lote.CantidadInicial = dto.CantidadInicial;
-                lote.CantidadDisponible = dto.CantidadDisponible;
+                lote.CostoUnitario = dto.CostoUnitario ?? 0;
+                lote.CantidadInicial = dto.CantidadInicial ?? 0;
+                lote.CantidadDisponible = dto.CantidadDisponible ?? 0;
                 lote.UsuarioModificacion = dto.Usuario;
                 lote.FechaModificacion = fechaActual;
 
                 _unitOfWork.InsumoLoteRepository.Update(lote);
 
-                var diferencia = dto.CantidadDisponible - cantidadAnterior;
+                var diferencia = (dto.CantidadDisponible ?? 0) - cantidadAnterior;
 
                 if (diferencia != 0)
                 {
@@ -328,6 +336,15 @@ namespace H.Services
                     };
 
                     _unitOfWork.MovimientoInsumoRepository.Add(movimiento);
+                }
+
+                var insumoActual = _unitOfWork.InsumoRepository.GetById(lote.IdInsumo);
+                if (insumoActual != null)
+                {
+                    insumoActual.StockActual = (insumoActual.StockActual ?? 0) + diferencia;
+                    insumoActual.UsuarioModificacion = dto.Usuario;
+                    insumoActual.FechaModificacion = fechaActual;
+                    _unitOfWork.InsumoRepository.Update(insumoActual);
                 }
 
                 _unitOfWork.Commit();

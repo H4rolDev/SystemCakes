@@ -104,6 +104,7 @@ namespace H.API.PRINCIPAL.Controllers
                 var servicio = new TortaService(unitOfWork, _cloudinaryService);
                 producto.FechaCreacion = Fecha.Hoy;
                 producto.FechaModificacion = Fecha.Hoy;
+                producto.StockDisponible = 0;
                 var respuesta = await servicio.AddAsync(producto, imagen);
                 return Ok(respuesta);
             }
@@ -120,8 +121,9 @@ namespace H.API.PRINCIPAL.Controllers
             {
                 var servicio = new TortaService(unitOfWork, _cloudinaryService);
                 producto.FechaModificacion = Fecha.Hoy;
+                producto.StockDisponible = 0;
                 var respuesta = await servicio.UpdateAsync(producto, imagen);
-                return Ok(respuesta); 
+                return Ok(respuesta);
             }
             catch (Exception ex)
             {

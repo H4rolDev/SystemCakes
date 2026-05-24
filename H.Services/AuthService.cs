@@ -1,4 +1,5 @@
 ﻿// H.Services/AuthService.cs
+using H.DataAccess;
 using H.DataAccess.Entidades;
 using H.DataAccess.Enums;
 using H.DataAccess.Helpers;
@@ -154,7 +155,7 @@ namespace H.Services
                 var rolCliente = new TUsuarioRol
                 {
                     IdUsuario = usuarioModelo.Id,
-                    IdRol = 3,
+                    IdRol = (int)RolEnum.Cliente,
                     Activo = true,
                     UsuarioCreacion = request.Username,
                     UsuarioModificacion = request.Username,
@@ -304,7 +305,7 @@ namespace H.Services
                 var rolAdmin = new TUsuarioRol
                 {
                     IdUsuario = modelUsuario.Id,
-                    IdRol = 2,
+                    IdRol = (int)RolEnum.Administrador,
                     Activo = true,
                     UsuarioCreacion = request.Username,
                     FechaCreacion = Fecha.Hoy,
@@ -356,5 +357,69 @@ namespace H.Services
                 throw;
             }
         }*/
+
+        public async Task<bool> ExisteUsername(string username)
+        {
+            try
+            {
+                var usuario = _unitOfWork.UsuarioRepository.GetBy(u => u.Username == username).FirstOrDefault();
+                return usuario != null;
+            }
+            catch (Exception ex)
+            {
+                var error = new Error
+                {
+                    Message = "AuthService.ExisteUsername: " + ex.Message,
+                    Exception = ex,
+                    Operation = "ExisteUsername",
+                    Code = TiposError.ErrorGeneral
+                };
+                LogErp.EscribirBaseDatos(error);
+                throw;
+            }
+        }
+
+        public async Task<int> CrearUsuarioConRol(TPersona persona, TUsuario usuario, int rolId)
+        {
+            try
+            {
+                var context = (sistemContext)_unitOfWork.Context;
+                var personaEntry = context.TPersona.Add(persona);
+                _unitOfWork.Commit();
+                
+                var idPersona = personaEntry.Entity.Id;
+                usuario.IdPersona = idPersona;
+
+                var usuarioEntry = context.TUsuario.Add(usuario);
+                _unitOfWork.Commit();
+                
+                var idUsuario = usuarioEntry.Entity.Id;
+
+                var usuarioRol = new TUsuarioRol
+                {
+                    IdUsuario = idUsuario,
+                    IdRol = rolId,
+                    Activo = true,
+                    UsuarioCreacion = "SYSTEM",
+                    FechaCreacion = DateTime.Now
+                };
+                context.TUsuarioRol.Add(usuarioRol);
+                _unitOfWork.Commit();
+
+                return idUsuario;
+            }
+            catch (Exception ex)
+            {
+                var error = new Error
+                {
+                    Message = "AuthService.CrearUsuarioConRol: " + ex.Message,
+                    Exception = ex,
+                    Operation = "CrearUsuarioConRol",
+                    Code = TiposError.NoInsertado
+                };
+                LogErp.EscribirBaseDatos(error);
+                throw;
+            }
+        }
     }
 }

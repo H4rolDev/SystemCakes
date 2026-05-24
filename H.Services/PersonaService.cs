@@ -1,4 +1,4 @@
-﻿using H.DataAccess.Entidades;
+using H.DataAccess.Entidades;
 using H.DataAccess.Enums;
 using H.DataAccess.Log;
 using H.DataAccess.UnitofWork;
@@ -100,24 +100,44 @@ namespace H.Services
             }
         }
 
-        public IEnumerable<PersonaListadoDTO> ObtenerCombo()
-		{
-			try
-			{
-				return _unitOfWork.PersonaRepository.ObtenerCombo();
-			}
-			catch (Exception ex)
-			{
-				var error = new Error();
-				error.Message = "PersonaService" + ex.Message;
-				error.Exception = ex;
-				error.Operation = "ObtenerListadoActivos";
-				error.Code = TiposError.NoEncontrado;
-				error.Objeto = JsonConvert.SerializeObject(null);
+public IEnumerable<PersonaListadoDTO> ObtenerCombo()
+ 		{
+ 			try
+ 			{
+ 				return _unitOfWork.PersonaRepository.ObtenerCombo();
+ 			}
+ 			catch (Exception ex)
+ 			{
+ 				var error = new Error();
+ 				error.Message = "PersonaService" + ex.Message;
+ 				error.Exception = ex;
+ 				error.Operation = "ObtenerListadoActivos";
+ 				error.Code = TiposError.NoEncontrado;
+ 				error.Objeto = JsonConvert.SerializeObject(null);
 
-				LogErp.EscribirBaseDatos(error);
-				throw ex;
-			}
-		}
+ 				LogErp.EscribirBaseDatos(error);
+ 				throw ex;
+ 			}
+ 		}
+
+        public IEnumerable<PersonalDTO> ObtenerComboPersonal()
+ 		{
+ 			try
+ 			{
+ 				return _unitOfWork.PersonaRepository.ObtenerComboPersonal();
+ 			}
+ 			catch (Exception ex)
+ 			{
+ 				var error = new Error();
+ 				error.Message = "PersonaService" + ex.Message;
+ 				error.Exception = ex;
+ 				error.Operation = "ObtenerComboPersonal";
+ 				error.Code = TiposError.NoEncontrado;
+ 				error.Objeto = JsonConvert.SerializeObject(null);
+
+ 				LogErp.EscribirBaseDatos(error);
+ 				throw ex;
+ 			}
+ 		}
     }
 }

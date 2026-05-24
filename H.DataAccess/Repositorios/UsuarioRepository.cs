@@ -1,8 +1,8 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Dapper;
 using H.DataAccess.Entidades;
 using H.DataAccess.Enums;
-using H.DataAccess.Infrastructure;
+using H.DataAccess.Infraestructure;
 using H.DataAccess.Log;
 using H.DataAccess.Models;
 using H.DataAccess.Repositorios;
@@ -123,29 +123,80 @@ namespace H.DataAccess.Repositorios
         }*/
 
 
-        /*public IEnumerable<UsuarioListadoDTO> ObtenerCombo()
+        public IEnumerable<ComboDTO> ObtenerComboClientes()
         {
             try
             {
-                var query = "SP_Usuario_ListadoActivo_Combo";
-                using (var conn = connectionFactory.GetConnection)
+                var rolClienteIds = context.TUsuarioRol
+                    .Where(ur => ur.IdRol == (int)RolEnum.Cliente && ur.Activo)
+                    .Select(ur => ur.IdUsuario)
+                    .ToList();
+
+                var usuarios = context.TUsuario
+                    .Where(u => rolClienteIds.Contains(u.Id) && u.Activo)
+                    .ToList();
+                
+                var idsPersona = usuarios.Select(u => u.IdPersona).ToList();
+                
+                var personas = context.TPersona
+                    .Where(p => idsPersona.Contains(p.Id) && p.Activo)
+                    .ToList();
+
+                return personas.Select(p => new ComboDTO
                 {
-                    var rpta = SqlMapper.Query<UsuarioListadoDTO>(conn, query, param: null, commandType: CommandType.StoredProcedure);
-                    return rpta.ToList();
-                }
+                    Id = p.Id,
+                    Nombre = (p.ApellidoPaterno ?? "") + " " + p.Nombres
+                }).ToList();
             }
             catch (Exception ex)
             {
                 var error = new Error();
                 error.Message = "UsuarioRepository" + ex.Message;
                 error.Exception = ex;
-                error.Operation = "ObtenerCombo";
-                error.Code = TiposError.NoInsertado;
+                error.Operation = "ObtenerComboClientes";
+                error.Code = TiposError.NoEncontrado;
                 error.Objeto = JsonConvert.SerializeObject(null);
                 LogErp.EscribirBaseDatos(error);
-
                 throw ex;
             }
-        }*/
+        }
+
+        public IEnumerable<ComboDTO> ObtenerComboDrivers()
+        {
+            try
+            {
+                var rolDriverIds = context.TUsuarioRol
+                    .Where(ur => ur.IdRol == (int)RolEnum.Repartidor && ur.Activo)
+                    .Select(ur => ur.IdUsuario)
+                    .ToList();
+
+                var usuarios = context.TUsuario
+                    .Where(u => rolDriverIds.Contains(u.Id) && u.Activo)
+                    .ToList();
+                
+                var idsPersona = usuarios.Select(u => u.IdPersona).ToList();
+                
+                var personas = context.TPersona
+                    .Where(p => idsPersona.Contains(p.Id) && p.Activo)
+                    .ToList();
+
+                return personas.Select(p => new ComboDTO
+                {
+                    Id = p.Id,
+                    Nombre = (p.ApellidoPaterno ?? "") + " " + p.Nombres
+                }).ToList();
+            }
+            catch (Exception ex)
+            {
+                var error = new Error();
+                error.Message = "UsuarioRepository" + ex.Message;
+                error.Exception = ex;
+                error.Operation = "ObtenerComboDrivers";
+                error.Code = TiposError.NoEncontrado;
+                error.Objeto = JsonConvert.SerializeObject(null);
+                LogErp.EscribirBaseDatos(error);
+                throw ex;
+            }
+        }
     }
 }

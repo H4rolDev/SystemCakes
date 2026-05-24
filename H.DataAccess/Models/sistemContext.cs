@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using H.DataAccess.Entidades;
 using H.DataAccess.Models;
 using Microsoft.EntityFrameworkCore;
@@ -31,21 +31,25 @@ public partial class sistemContext : DbContext
     public virtual DbSet<TMovimientoInsumo> TMovimientoInsumo { get; set; }
     public virtual DbSet<TMovimientoTorta> TMovimientoTorta { get; set; }
     public virtual DbSet<TProduccion> TProduccion { get; set; }
-    //public virtual DbSet<TProduccionDetalleInsumo> TProduccionDetalleInsumo { get; set; }
-    //public virtual DbSet<TEstadoVenta> TEstadoVenta { get; set; }
-    //public virtual DbSet<TTipoEntrega> TTipoEntrega { get; set; }
-    //public virtual DbSet<TVenta> TVenta { get; set; }
-    //public virtual DbSet<TVentaDetalle> TVentaDetalle { get; set; }
-    //public virtual DbSet<TMetodoPago> TMetodoPago { get; set; }
-    //public virtual DbSet<TPagoVenta> TPagoVenta { get; set; }
-    //public virtual DbSet<TEstadoEntrega> TEstadoEntrega { get; set; }
-    //public virtual DbSet<TEntregaDelivery> TEntregaDelivery { get; set; }
+    public virtual DbSet<TProduccionDetalleInsumo> TProduccionDetalleInsumo { get; set; }
+    public virtual DbSet<TEstadoVenta> TEstadoVenta { get; set; }
+    public virtual DbSet<TTipoEntrega> TTipoEntrega { get; set; }
+    public virtual DbSet<TVenta> TVenta { get; set; }
+    public virtual DbSet<TVentaDetalle> TVentaDetalle { get; set; }
+    public virtual DbSet<TMetodoPago> TMetodoPago { get; set; }
+    public virtual DbSet<TPagoVenta> TPagoVenta { get; set; }
+    public virtual DbSet<TEstadoEntrega> TEstadoEntrega { get; set; }
+    public virtual DbSet<TEntregaDelivery> TEntregaDelivery { get; set; }
     //public virtual DbSet<TTipoComprobante> TTipoComprobante { get; set; }
-    //public virtual DbSet<TComprobanteVenta> TComprobanteVenta { get; set; }
-    //public virtual DbSet<TCancelacionVenta> TCancelacionVenta { get; set; }
+    public virtual DbSet<TComprobanteVenta> TComprobanteVenta { get; set; }
+    public virtual DbSet<TCancelacionVenta> TCancelacionVenta { get; set; }
     //public virtual DbSet<TPromocion> TPromocion { get; set; }
     //public virtual DbSet<TPromocionTorta> TPromocionTorta { get; set; }
     public virtual DbSet<TRecetaTorta> TRecetaTorta { get; set; }
+    public virtual DbSet<TProveedor> TProveedor { get; set; }
+    public virtual DbSet<TEntradaInsumo> TEntradaInsumo { get; set; }
+    public virtual DbSet<TEntradaInsumoDetalle> TEntradaInsumoDetalle { get; set; }
+    public virtual DbSet<TMetaVenta> TMetaVenta { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -324,7 +328,7 @@ public partial class sistemContext : DbContext
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
-        /*modelBuilder.Entity<TProduccionDetalleInsumo>(entity =>
+        modelBuilder.Entity<TProduccionDetalleInsumo>(entity =>
         {
             entity.ToTable("TProduccionDetalleInsumo");
 
@@ -333,13 +337,13 @@ public partial class sistemContext : DbContext
             entity.HasOne<TProduccion>()
                 .WithMany()
                 .HasForeignKey(e => e.IdProduccion)
-                .OnDelete(DeleteBehavior.Cascade);Z
+                .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasOne<TInsumoLote>()
+            entity.HasOne<TInsumo>()
                 .WithMany()
-                .HasForeignKey(e => e.IdInsumoLote)
+                .HasForeignKey(e => e.IdInsumo)
                 .OnDelete(DeleteBehavior.Restrict);
-        });*/
+        });
 
         modelBuilder.Entity<TRecetaTorta>(entity =>
         {
@@ -376,49 +380,50 @@ public partial class sistemContext : DbContext
         //    entity.Property(e => e.Nombre).HasMaxLength(100).IsRequired();
         //});
 
-        //modelBuilder.Entity<TVenta>(entity =>
-        //{
-        //    entity.ToTable("TVenta");
+        modelBuilder.Entity<TVenta>(entity =>
+        {
+            entity.ToTable("TVenta");
 
-        //    entity.Property(e => e.Total).HasPrecision(10, 2).IsRequired();
-        //    entity.Property(e => e.FechaVenta).HasColumnType("datetime").IsRequired();
+            entity.Property(e => e.Total).HasPrecision(10, 2).IsRequired();
+            entity.Property(e => e.FechaVenta).HasColumnType("datetime").IsRequired();
 
-        //    entity.HasOne<TEstadoVenta>()
-        //        .WithMany()
-        //        .HasForeignKey(e => e.IdEstadoVenta)
-        //        .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<TEstadoVenta>()
+                .WithMany()
+                .HasForeignKey(e => e.IdEstadoVenta)
+                .OnDelete(DeleteBehavior.Restrict);
 
-        //    entity.HasOne<TTipoEntrega>()
-        //        .WithMany()
-        //        .HasForeignKey(e => e.IdTipoEntrega)
-        //        .OnDelete(DeleteBehavior.Restrict);
-        //});
+            entity.HasOne<TTipoEntrega>()
+                .WithMany()
+                .HasForeignKey(e => e.IdTipoEntrega)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
 
-        //modelBuilder.Entity<TVentaDetalle>(entity =>
-        //{
-        //    entity.ToTable("TVentaDetalle");
+        modelBuilder.Entity<TTipoEntrega>(entity =>
+        {
+            entity.ToTable("TTipoEntrega");
+            entity.Property(e => e.Nombre).HasMaxLength(100).IsRequired();
+        });
 
-        //    entity.Property(e => e.Cantidad).HasPrecision(10, 2).IsRequired();
-        //    entity.Property(e => e.PrecioBase).HasPrecision(10, 2).IsRequired();
-        //    entity.Property(e => e.PrecioPersonalizacion).HasPrecision(10, 2);
-        //    entity.Property(e => e.PrecioFinal).HasPrecision(10, 2).IsRequired();
-        //    entity.Property(e => e.SubTotal).HasPrecision(10, 2).IsRequired();
+        modelBuilder.Entity<TVentaDetalle>(entity =>
+        {
+            entity.ToTable("TVentaDetalle");
 
-        //    entity.HasOne<TVenta>()
-        //        .WithMany()
-        //        .HasForeignKey(e => e.IdVenta)
-        //        .OnDelete(DeleteBehavior.Cascade);
+            entity.Property(e => e.Cantidad).HasPrecision(10, 2).IsRequired();
+            entity.Property(e => e.PrecioBase).HasPrecision(10, 2).IsRequired();
+            entity.Property(e => e.PrecioPersonalizacion).HasPrecision(10, 2);
+            entity.Property(e => e.PrecioFinal).HasPrecision(10, 2).IsRequired();
+            entity.Property(e => e.SubTotal).HasPrecision(10, 2).IsRequired();
 
-        //    entity.HasOne<TTorta>()
-        //        .WithMany()
-        //        .HasForeignKey(e => e.IdTorta)
-        //        .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<TVenta>()
+                .WithMany()
+                .HasForeignKey(e => e.IdVenta)
+                .OnDelete(DeleteBehavior.Cascade);
 
-        //    entity.HasOne<TTortaLote>()
-        //        .WithMany()
-        //        .HasForeignKey(e => e.IdTortaLote)
-        //        .OnDelete(DeleteBehavior.Restrict);
-        //});
+            entity.HasOne<TTorta>()
+                .WithMany()
+                .HasForeignKey(e => e.IdTorta)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
 
         //modelBuilder.Entity<TMetodoPago>(entity =>
         //{
@@ -426,47 +431,52 @@ public partial class sistemContext : DbContext
         //    entity.Property(e => e.Nombre).HasMaxLength(100).IsRequired();
         //});
 
-        //modelBuilder.Entity<TPagoVenta>(entity =>
-        //{
-        //    entity.ToTable("TPagoVenta");
+        modelBuilder.Entity<TPagoVenta>(entity =>
+        {
+            entity.ToTable("TPagoVenta");
 
-        //    entity.Property(e => e.Monto).HasPrecision(10, 2).IsRequired();
-        //    entity.Property(e => e.FechaPago).HasColumnType("datetime").IsRequired();
+            entity.Property(e => e.Monto).HasPrecision(10, 2).IsRequired();
+            entity.Property(e => e.FechaPago).HasColumnType("datetime").IsRequired();
 
-        //    entity.HasOne<TVenta>()
-        //        .WithMany()
-        //        .HasForeignKey(e => e.IdVenta)
-        //        .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne<TVenta>()
+                .WithMany()
+                .HasForeignKey(e => e.IdVenta)
+                .OnDelete(DeleteBehavior.Cascade);
 
-        //    entity.HasOne<TMetodoPago>()
-        //        .WithMany()
-        //        .HasForeignKey(e => e.IdMetodoPago)
-        //        .OnDelete(DeleteBehavior.Restrict);
-        //});
+            entity.HasOne<TMetodoPago>()
+                .WithMany()
+                .HasForeignKey(e => e.IdMetodoPago)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
 
-        //modelBuilder.Entity<TEstadoEntrega>(entity =>
-        //{
-        //    entity.ToTable("TEstadoEntrega");
-        //    entity.Property(e => e.Nombre).HasMaxLength(100).IsRequired();
-        //});
+        modelBuilder.Entity<TEstadoEntrega>(entity =>
+        {
+            entity.ToTable("TEstadoEntrega");
+            entity.Property(e => e.Nombre).HasMaxLength(100).IsRequired();
+        });
 
-        //modelBuilder.Entity<TEntregaDelivery>(entity =>
-        //{
-        //    entity.ToTable("TEntregaDelivery");
+        modelBuilder.Entity<TEntregaDelivery>(entity =>
+        {
+            entity.ToTable("TEntregaDelivery");
 
-        //    entity.Property(e => e.DireccionEntrega).HasMaxLength(300).IsRequired();
-        //    entity.Property(e => e.FechaEntregaProgramada).HasColumnType("datetime");
+            entity.Property(e => e.Direccion).HasMaxLength(300).IsRequired();
+            entity.Property(e => e.FechaEntrega).HasColumnType("datetime");
 
-        //    entity.HasOne<TVenta>()
-        //        .WithMany()
-        //        .HasForeignKey(e => e.IdVenta)
-        //        .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne<TVenta>()
+                .WithMany()
+                .HasForeignKey(e => e.IdVenta)
+                .OnDelete(DeleteBehavior.Cascade);
 
-        //    entity.HasOne<TEstadoEntrega>()
-        //        .WithMany()
-        //        .HasForeignKey(e => e.IdEstadoEntrega)
-        //        .OnDelete(DeleteBehavior.Restrict);
-        //});
+            entity.HasOne<TEstadoEntrega>()
+                .WithMany()
+                .HasForeignKey(e => e.IdEstadoEntrega)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<TPersona>()
+                .WithMany()
+                .HasForeignKey(e => e.IdPersonalRepartidor)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
 
         //modelBuilder.Entity<TTipoComprobante>(entity =>
         //{
@@ -493,18 +503,18 @@ public partial class sistemContext : DbContext
         //        .OnDelete(DeleteBehavior.Restrict);
         //});
 
-        //modelBuilder.Entity<TCancelacionVenta>(entity =>
-        //{
-        //    entity.ToTable("TCancelacionVenta");
+        modelBuilder.Entity<TCancelacionVenta>(entity =>
+        {
+            entity.ToTable("TCancelacionVenta");
 
-        //    entity.Property(e => e.Motivo).HasMaxLength(500).IsRequired();
-        //    entity.Property(e => e.FechaCancelacion).HasColumnType("datetime").IsRequired();
+            entity.Property(e => e.Motivo).HasMaxLength(500).IsRequired();
+            entity.Property(e => e.FechaCancelacion).HasColumnType("datetime").IsRequired();
 
-        //    entity.HasOne<TVenta>()
-        //        .WithMany()
-        //        .HasForeignKey(e => e.IdVenta)
-        //        .OnDelete(DeleteBehavior.Cascade);
-        //});
+            entity.HasOne<TVenta>()
+                .WithMany()
+                .HasForeignKey(e => e.IdVenta)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
 
         // =========================================================
         // PROMOCIONES
@@ -543,6 +553,43 @@ public partial class sistemContext : DbContext
                 .HasMaxLength(100)
                 .IsRequired();
 
+        });
+
+        modelBuilder.Entity<TProveedor>(entity =>
+        {
+            entity.ToTable("TProveedor");
+            entity.Property(e => e.Nombre).HasMaxLength(200).IsRequired();
+            entity.Property(e => e.Ruc).HasMaxLength(20);
+            entity.Property(e => e.Telefono).HasMaxLength(20);
+            entity.Property(e => e.Direccion).HasMaxLength(300);
+            entity.Property(e => e.Contacto).HasMaxLength(200);
+        });
+
+        modelBuilder.Entity<TEntradaInsumo>(entity =>
+        {
+            entity.ToTable("TEntradaInsumo");
+            entity.Property(e => e.IdProveedor).HasColumnName("IdProveedor");
+            entity.Property(e => e.NumeroDocumento).HasMaxLength(50);
+            entity.Property(e => e.TipoDocumento).HasMaxLength(50);
+            entity.Property(e => e.ImagenDocumento).HasMaxLength(500);
+            entity.Property(e => e.Observaciones).HasMaxLength(500);
+            entity.Property(e => e.MotivoRechazo).HasMaxLength(500);
+        });
+
+        modelBuilder.Entity<TEntradaInsumoDetalle>(entity =>
+        {
+            entity.ToTable("TEntradaInsumoDetalle");
+            entity.Property(e => e.IdEntradaInsumo).HasColumnName("IdEntradaInsumo");
+            entity.Property(e => e.IdInsumo).HasColumnName("IdInsumo");
+            entity.Property(e => e.Cantidad).HasPrecision(18, 4);
+            entity.Property(e => e.PrecioUnitario).HasPrecision(18, 4);
+        });
+
+        modelBuilder.Entity<TMetaVenta>(entity =>
+        {
+            entity.ToTable("TMetaVenta");
+            entity.Property(e => e.MetaAnual).HasPrecision(18, 2);
+            entity.HasIndex(e => e.Anio).IsUnique();
         });
     }
 }

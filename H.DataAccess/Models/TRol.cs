@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,6 +17,10 @@ namespace H.DataAccess.Models
         /// Nombre del rol.
         /// </summary>
         public string Nombre { get; set; } = null!;
+        /// <summary>
+        /// Descripción del rol.
+        /// </summary>
+        public string? Descripcion { get; set; }
         /// <summary>
         /// Estado del registro.
         /// </summary>

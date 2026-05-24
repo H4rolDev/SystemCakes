@@ -1,4 +1,4 @@
-﻿using H.DataAccess.Entidades;
+using H.DataAccess.Entidades;
 using H.DTOs;
 
 namespace H.Services
@@ -9,6 +9,7 @@ namespace H.Services
         int Update(Usuario entidad);
         int Delete(int id, string usuario);
         Usuario GetById(int id);
-        /*IEnumerable<UsuarioListadoDTO> ObtenerCombo();*/
+        IEnumerable<ComboDTO> ObtenerComboClientes();
+        IEnumerable<ComboDTO> ObtenerComboDrivers();
     }
 }
