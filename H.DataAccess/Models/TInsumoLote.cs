@@ -20,7 +20,7 @@ namespace H.DataAccess.Models
         /// <summary>
         /// Nombre del insumo.
         /// </summary>
-        public string NumeroLote { get; set; } = null!;
+        public string? NumeroLote { get; set; }
         /// <summary>
         /// Stock actual de insumo.
         /// </summary>
