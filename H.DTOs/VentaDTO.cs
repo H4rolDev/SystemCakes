@@ -92,6 +92,8 @@ namespace H.DTOs
         public string Productos { get; set; } = string.Empty;
         public int Cantidad { get; set; }
         public string TipoEntrega { get; set; } = string.Empty;
+        public int IdEstadoVenta { get; set; }
+        public int? IdEstadoEntrega { get; set; }
         public string? DeliveryEstado { get; set; }
         public string? DeliveryDireccion { get; set; }
         public string? DeliveryTelefono { get; set; }

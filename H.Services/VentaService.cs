@@ -496,7 +496,8 @@ namespace H.Services
                     x.FechaVenta,
                     x.Total,
                     x.IdEstadoVenta,
-                    x.IdTipoEntrega
+                    x.IdTipoEntrega,
+                    x.UsuarioCreacion
                 }).ToList();
         }
 
@@ -689,6 +690,7 @@ namespace H.Services
             if (delivery == null)
                 throw new Exception("Delivery no encontrado.");
 
+            delivery.IdEstadoEntrega = (int)EstadoEntregaEnum.Asignado;
             delivery.IdPersonalRepartidor = idPersonalRepartidor;
             delivery.FechaAsignacion = Fecha.Hoy;
             delivery.FechaModificacion = Fecha.Hoy;
@@ -743,6 +745,8 @@ namespace H.Services
                     Fecha = venta.FechaCreacion,
                     Total = venta.Total ?? 0,
                     EstadoPago = estadoPago?.Nombre ?? "Desconocido",
+                    IdEstadoVenta = venta.IdEstadoVenta,
+                    IdEstadoEntrega = entrega?.IdEstadoEntrega,
                     Productos = nombresTortas,
                     Cantidad = (int)detalles.Sum(x => x.Cantidad),
                     TipoEntrega = venta.IdTipoEntrega == 1 ? "Recojo en tienda" : "Delivery",

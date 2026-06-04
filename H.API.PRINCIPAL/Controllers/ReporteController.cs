@@ -3,6 +3,7 @@ using H.DataAccess.Models;
 using H.DataAccess.Helpers;
 using H.DTOs;
 using Microsoft.AspNetCore.Mvc;
+using System.Globalization;
 
 namespace H.API.PRINCIPAL.Controllers
 {
@@ -472,7 +473,7 @@ namespace H.API.PRINCIPAL.Controllers
 
                     return new
                     {
-                        mes = mesDate.ToString("MMMM"),
+                        mes = mesDate.ToString("MMMM", new CultureInfo("es-PE")),
                         ventas = ventasMes.Sum(v => v.Total ?? 0),
                         cantidadVentas = ventasMes.Count,
                         costos = costosMes,
@@ -539,7 +540,7 @@ namespace H.API.PRINCIPAL.Controllers
 
                     return new
                     {
-                        mes = new DateTime(year, mes, 1).ToString("MMMM"),
+                        mes = new DateTime(year, mes, 1).ToString("MMMM", new CultureInfo("es-PE")),
                         meta = metaMensual,
                         real = real,
                         cumplimiento = porcentaje
