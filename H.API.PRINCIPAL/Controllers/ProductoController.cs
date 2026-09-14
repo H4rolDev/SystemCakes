@@ -4,6 +4,7 @@ using H.Services;
 using H.DataAccess.Extension;
 using H.DataAccess.UnitofWork;
 using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
 
 namespace H.API.PRINCIPAL.Controllers
 {
@@ -16,6 +17,20 @@ namespace H.API.PRINCIPAL.Controllers
         public ProductoController(IUnitOfWork unitOfWork)
         {
             this.unitOfWork = unitOfWork;
+        }
+
+        [HttpGet]
+        public IActionResult GetList()
+        {
+            try
+            {
+                var productos = unitOfWork.ProductoRepository.GetAll().ToList();
+                return Ok(productos);
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult(ex, User);
+            }
         }
 
         [HttpPost("Insertar")]

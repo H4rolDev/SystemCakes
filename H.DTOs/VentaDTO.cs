@@ -24,6 +24,18 @@ namespace H.DTOs
         public decimal PrecioPersonalizacion { get; set; }
 
         public string? Mensaje { get; set; }
+        public string? Tamanio { get; set; }
+        public string? Sabor { get; set; }
+        public string? Relleno { get; set; }
+        public int? Pisos { get; set; }
+        public string? ColorDecoracion { get; set; }
+        public string? Decoracion { get; set; }
+        public string? Cobertura { get; set; }
+        public int? Porciones { get; set; }
+        public string? Evento { get; set; }
+        public DateTime? FechaEntrega { get; set; }
+        public string? Observaciones { get; set; }
+        public string? ImagenReferencia { get; set; }
     }
 
     public class PagoVentaDTO
@@ -41,6 +53,34 @@ namespace H.DTOs
         public string Telefono { get; set; }
         public string? NombreContacto { get; set; }
         public decimal CostoDelivery { get; set; }
+        public decimal? Latitud { get; set; }
+        public decimal? Longitud { get; set; }
+    }
+
+    public class CompletarEntregaDTO
+    {
+        public int IdDelivery { get; set; }
+        public string Usuario { get; set; } = string.Empty;
+        public decimal? MontoCobrado { get; set; }
+        public int IdMetodoPago { get; set; } = 1;
+    }
+
+    public class HistorialRepartidorPaginacionDTO
+    {
+        public List<object> Items { get; set; } = new();
+        public int TotalRegistros { get; set; }
+        public int TotalPaginas { get; set; }
+        public int PaginaActual { get; set; }
+        public int TamanioPagina { get; set; }
+    }
+
+    public class DeliveryPaginacionDTO
+    {
+        public List<object> Items { get; set; } = new();
+        public int TotalRegistros { get; set; }
+        public int TotalPaginas { get; set; }
+        public int PaginaActual { get; set; }
+        public int TamanioPagina { get; set; }
     }
 
     public class ComprobanteDTO
@@ -49,6 +89,13 @@ namespace H.DTOs
         public string Serie { get; set; }
         public string Numero { get; set; }
     }
+public class EmitirComprobanteDTO
+    {
+        public int IdVenta { get; set; }
+        public int IdTipoComprobante { get; set; }
+        public string Usuario { get; set; }
+    }
+
     public class VentaComprobanteDTO
     {
         public int IdVenta { get; set; }
@@ -67,6 +114,15 @@ namespace H.DTOs
         public string? Direccion { get; set; }
 
         public List<PagoComprobanteDTO> Pagos { get; set; }
+        public EmpresaComprobanteDTO Empresa { get; set; }
+    }
+
+    public class EmpresaComprobanteDTO
+    {
+        public string Nombre { get; set; } = string.Empty;
+        public string Ruc { get; set; } = string.Empty;
+        public string Direccion { get; set; } = string.Empty;
+        public string Telefono { get; set; } = string.Empty;
     }
 
     public class DetalleComprobanteDTO
@@ -75,6 +131,19 @@ namespace H.DTOs
         public decimal Cantidad { get; set; }
         public decimal? PrecioUnitario { get; set; }
         public decimal? SubTotal { get; set; }
+        public string? Tamanio { get; set; }
+        public string? Sabor { get; set; }
+        public string? Relleno { get; set; }
+        public int? Pisos { get; set; }
+        public string? ColorDecoracion { get; set; }
+        public string? Mensaje { get; set; }
+        public string? Decoracion { get; set; }
+        public string? Cobertura { get; set; }
+        public int? Porciones { get; set; }
+        public string? Evento { get; set; }
+        public DateTime? FechaEntrega { get; set; }
+        public string? Observaciones { get; set; }
+        public string? ImagenReferencia { get; set; }
     }
 
     public class PagoComprobanteDTO
@@ -88,6 +157,14 @@ namespace H.DTOs
         public int Id { get; set; }
         public DateTime Fecha { get; set; }
         public decimal Total { get; set; }
+        public decimal MontoPagado { get; set; }
+        public decimal SaldoPendiente { get; set; }
+        public bool RequiereAnticipo { get; set; }
+        public bool TienePersonalizacion { get; set; }
+        public int CantidadPersonalizadas { get; set; }
+        public DateTime? FechaEntregaSolicitada { get; set; }
+        public string ClienteNombre { get; set; } = string.Empty;
+        public string? ClienteTelefono { get; set; }
         public string EstadoPago { get; set; } = string.Empty;
         public string Productos { get; set; } = string.Empty;
         public int Cantidad { get; set; }
@@ -98,6 +175,17 @@ namespace H.DTOs
         public string? DeliveryDireccion { get; set; }
         public string? DeliveryTelefono { get; set; }
         public string MetodoPago { get; set; } = string.Empty;
+        public string? TipoComprobante { get; set; }
+        public string? SerieNumeroComprobante { get; set; }
+    }
+
+    public class MisPedidosPaginacionDTO
+    {
+        public List<MisPedidosDTO> Items { get; set; } = new();
+        public int TotalRegistros { get; set; }
+        public int TotalPaginas { get; set; }
+        public int PaginaActual { get; set; }
+        public int TamanioPagina { get; set; }
     }
 
     public class ActualizarPersonaDTO
@@ -123,6 +211,9 @@ namespace H.DTOs
         public string? ImagenComprobante { get; set; }
         public string Estado { get; set; } = null!;
         public int IdEstadoVenta { get; set; }
+        public decimal MontoPagado { get; set; }
+        public decimal SaldoPendiente { get; set; }
+        public bool RequiereAnticipo { get; set; }
         public List<VentaDetalleValidacionDTO> Detalles { get; set; } = new();
     }
 
@@ -179,6 +270,9 @@ namespace H.DTOs
         public string? NumeroOperacion { get; set; }
         public int IdEstadoVenta { get; set; }
         public string Estado { get; set; }
+        public decimal MontoPagado { get; set; }
+        public decimal SaldoPendiente { get; set; }
+        public bool RequiereAnticipo { get; set; }
     }
 
     public class VentaHistorialDTO

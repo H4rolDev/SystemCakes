@@ -50,6 +50,8 @@ public partial class sistemContext : DbContext
     public virtual DbSet<TEntradaInsumo> TEntradaInsumo { get; set; }
     public virtual DbSet<TEntradaInsumoDetalle> TEntradaInsumoDetalle { get; set; }
     public virtual DbSet<TMetaVenta> TMetaVenta { get; set; }
+    public virtual DbSet<TConfiguracionDelivery> TConfiguracionDelivery { get; set; }
+    public virtual DbSet<TTortaOpcion> TTortaOpcion { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -385,6 +387,8 @@ public partial class sistemContext : DbContext
             entity.ToTable("TVenta");
 
             entity.Property(e => e.Total).HasPrecision(10, 2).IsRequired();
+            entity.Property(e => e.MontoPagado).HasPrecision(10, 2).IsRequired();
+            entity.Property(e => e.SaldoPendiente).HasPrecision(10, 2).IsRequired();
             entity.Property(e => e.FechaVenta).HasColumnType("datetime").IsRequired();
 
             entity.HasOne<TEstadoVenta>()
@@ -413,6 +417,14 @@ public partial class sistemContext : DbContext
             entity.Property(e => e.PrecioPersonalizacion).HasPrecision(10, 2);
             entity.Property(e => e.PrecioFinal).HasPrecision(10, 2).IsRequired();
             entity.Property(e => e.SubTotal).HasPrecision(10, 2).IsRequired();
+            entity.Property(e => e.TamanoPersonalizado).HasMaxLength(50);
+            entity.Property(e => e.SaborPersonalizado).HasMaxLength(100);
+            entity.Property(e => e.RellenoPersonalizado).HasMaxLength(100);
+            entity.Property(e => e.ColorDecoracionPersonalizada).HasMaxLength(100);
+            entity.Property(e => e.CoberturaPersonalizada).HasMaxLength(100);
+            entity.Property(e => e.EventoPersonalizado).HasMaxLength(100);
+            entity.Property(e => e.ImagenReferencia).HasMaxLength(500);
+            entity.Property(e => e.FechaEntregaSolicitada).HasColumnType("datetime");
 
             entity.HasOne<TVenta>()
                 .WithMany()
@@ -461,6 +473,8 @@ public partial class sistemContext : DbContext
 
             entity.Property(e => e.Direccion).HasMaxLength(300).IsRequired();
             entity.Property(e => e.FechaEntrega).HasColumnType("datetime");
+            entity.Property(e => e.Latitud).HasPrecision(10, 7);
+            entity.Property(e => e.Longitud).HasPrecision(10, 7);
 
             entity.HasOne<TVenta>()
                 .WithMany()
@@ -476,6 +490,37 @@ public partial class sistemContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.IdPersonalRepartidor)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<TTortaOpcion>(entity =>
+        {
+            entity.ToTable("TTortaOpcion");
+            entity.Property(e => e.Tipo).HasMaxLength(20).IsRequired();
+            entity.Property(e => e.Valor).HasMaxLength(150).IsRequired();
+            entity.Property(e => e.PrecioExtra).HasPrecision(10, 2).IsRequired();
+            entity.Property(e => e.ModoPrecio).HasMaxLength(20).IsRequired();
+            entity.Property(e => e.PrecioPorUnidad).HasPrecision(10, 2).IsRequired();
+            entity.Property(e => e.Obligatorio).IsRequired();
+            entity.Property(e => e.Minimo);
+            entity.Property(e => e.Maximo);
+            entity.Property(e => e.Orden).IsRequired();
+
+            entity.HasOne<TTorta>()
+                .WithMany()
+                .HasForeignKey(e => e.IdTorta)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(e => new { e.IdTorta, e.Tipo, e.Valor }).IsUnique();
+        });
+
+        modelBuilder.Entity<TConfiguracionDelivery>(entity =>
+        {
+            entity.ToTable("TConfiguracionDelivery");
+            entity.Property(e => e.CostoBase).HasPrecision(10, 2).IsRequired();
+            entity.Property(e => e.CostoPorKilometro).HasPrecision(10, 2).IsRequired();
+            entity.Property(e => e.LatitudCentro).HasPrecision(10, 6).IsRequired();
+            entity.Property(e => e.LongitudCentro).HasPrecision(10, 6).IsRequired();
+            entity.Property(e => e.RadioMaximoKm).HasPrecision(10, 2).IsRequired();
         });
 
         //modelBuilder.Entity<TTipoComprobante>(entity =>

@@ -45,6 +45,8 @@ namespace H.DataAccess.Models
         /// Nombre del rol.
         /// </summary>
         public DateTime? FechaAsignacion { get; set; }
+        public DateTime? FechaAceptacion { get; set; }
+        public DateTime? FechaInicio { get; set; }
         /// <summary>
         /// Nombre del rol.
         /// </summary>
@@ -53,6 +55,8 @@ namespace H.DataAccess.Models
         /// Nombre del rol.
         /// </summary>
         public decimal? CostoDelivery { get; set; }
+        public decimal? Latitud { get; set; }
+        public decimal? Longitud { get; set; }
         /// <summary>
         /// Estado del registro.
         /// </summary>
@@ -65,6 +69,7 @@ namespace H.DataAccess.Models
         /// Usuario de modificación del registro
         /// </summary>
         public string? UsuarioModificacion { get; set; } = null!;
+        public string? UsuarioAsignacion { get; set; }
         /// <summary>
         /// Fecha de creación del registro
         /// </summary>

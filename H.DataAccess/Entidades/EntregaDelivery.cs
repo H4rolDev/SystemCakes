@@ -16,8 +16,13 @@ namespace H.DataAccess.Entidades
         public string? TelefonoContacto { get; set; }
         public string? NombreContacto { get; set; }
         public DateTime? FechaAsignacion { get; set; }
+        public DateTime? FechaAceptacion { get; set; }
+        public DateTime? FechaInicio { get; set; }
         public DateTime? FechaEntrega { get; set; }
         public decimal? CostoDelivery { get; set; }
+        public decimal? Latitud { get; set; }
+        public decimal? Longitud { get; set; }
+        public string? UsuarioAsignacion { get; set; }
         public int? IdPersonalRepartidor { get; set; }
     }
 }

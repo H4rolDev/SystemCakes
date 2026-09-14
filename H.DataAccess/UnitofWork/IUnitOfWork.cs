@@ -43,6 +43,7 @@ namespace H.DataAccess.UnitofWork
         IEntradaInsumoRepository EntradaInsumoRepository { get; }
         IEntradaInsumoDetalleRepository EntradaInsumoDetalleRepository { get; }
         IMetaVentaRepository MetaVentaRepository { get; }
+        ITortaOpcionRepository TortaOpcionRepository { get; }
 
         void Commit();
         void Rollback();

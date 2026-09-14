@@ -4,6 +4,7 @@ using H.DataAccess.Helpers;
 using H.DataAccess.UnitofWork;
 using H.DTOs;
 using H.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 
@@ -11,6 +12,7 @@ namespace H.API.PRINCIPAL.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    //[Authorize]
     public class VentaController : ControllerBase
     {
         private IUnitOfWork unitOfWork;
@@ -177,6 +179,7 @@ namespace H.API.PRINCIPAL.Controllers
         }
 
         [HttpGet("Listado")]
+        ////[Authorize(Roles = "Administrador,Atención")]
         public IActionResult Listado()
         {
             try
@@ -234,12 +237,13 @@ namespace H.API.PRINCIPAL.Controllers
         }
 
         [HttpGet("ListadoDeliveries")]
-        public IActionResult ListadoDeliveries()
+        //[Authorize(Roles = "Administrador,Atención,Repartidor")]
+        public IActionResult ListadoDeliveries(int pagina = 1, int tamanioPagina = 6, int idEstadoEntrega = 0)
         {
             try
             {
                 var service = new VentaService(unitOfWork);
-                return Ok(service.ObtenerListadoDeliveries());
+                return Ok(service.ObtenerListadoDeliveries(pagina, tamanioPagina, idEstadoEntrega));
             }
             catch (Exception ex)
             {
@@ -248,6 +252,7 @@ namespace H.API.PRINCIPAL.Controllers
         }
 
         [HttpPut("ActualizarEstadoDelivery")]
+        //[Authorize(Roles = "Administrador,Atención,Repartidor")]
         public IActionResult ActualizarEstadoDelivery(int idDelivery, int idEstadoEntrega, string usuario)
         {
             try
@@ -304,7 +309,50 @@ namespace H.API.PRINCIPAL.Controllers
             }
         }
 
+        [HttpPost("SubirImagenReferencia")]
+        public async Task<IActionResult> SubirImagenReferencia([FromBody] SubirImagenDTO dto)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(dto.ImagenBase64))
+                    return BadRequest(new { message = "La imagen de referencia es requerida." });
+                var base64Data = dto.ImagenBase64;
+                var mimeType = "image/jpeg";
+                if (base64Data.Contains(','))
+                {
+                    var parts = base64Data.Split(',', 2);
+                    mimeType = parts[0].Contains("png", StringComparison.OrdinalIgnoreCase) ? "image/png" : "image/jpeg";
+                    base64Data = parts[1];
+                }
+                var bytes = Convert.FromBase64String(base64Data);
+                await using var stream = new MemoryStream(bytes);
+                var formFile = new FormFile(stream, 0, stream.Length, "file", $"referencia_{DateTime.UtcNow.Ticks}.jpg")
+                {
+                    Headers = new HeaderDictionary(),
+                    ContentType = mimeType
+                };
+                var url = await _cloudinaryService.SubirImagenAsync(formFile, "referencias-tortas");
+                return Ok(new { url });
+            }
+            catch (Exception ex) { return new ErrorResult(ex, User); }
+        }
+
+        [HttpGet("MisPedidosPaginado")]
+        public IActionResult MisPedidosPaginado(int idPersona, int pagina = 1, int tamanioPagina = 6)
+        {
+            try
+            {
+                var service = new VentaService(unitOfWork);
+                return Ok(service.ObtenerMisPedidosPaginado(idPersona, pagina, tamanioPagina));
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult(ex, User);
+            }
+        }
+
         [HttpGet("ComboDrivers")]
+        //[Authorize(Roles = "Administrador,Atención")]
         public IActionResult ComboDrivers()
         {
             try
@@ -319,6 +367,7 @@ namespace H.API.PRINCIPAL.Controllers
         }
 
         [HttpGet("ComboClientes")]
+        //[Authorize(Roles = "Administrador,Atención")]
         public IActionResult ComboClientes()
         {
             try
@@ -333,6 +382,7 @@ namespace H.API.PRINCIPAL.Controllers
         }
 
         [HttpPut("AsignarDriver")]
+        //[Authorize(Roles = "Administrador,Atención")]
         public IActionResult AsignarDriver(int idDelivery, int idDriver, string usuario)
         {
             try
@@ -348,6 +398,7 @@ namespace H.API.PRINCIPAL.Controllers
         }
 
         [HttpPut("CancelarEntrega")]
+        //[Authorize(Roles = "Administrador,Atención")]
         public IActionResult CancelarEntrega(int idDelivery, string motivo, string usuario)
         {
             try
@@ -363,6 +414,7 @@ namespace H.API.PRINCIPAL.Controllers
         }
 
         [HttpPut("AsignarRepartidor")]
+        //[Authorize(Roles = "Administrador,Atención")]
         public IActionResult AsignarRepartidor(int idDelivery, int idPersonalRepartidor, string usuario)
         {
             try
@@ -378,6 +430,7 @@ namespace H.API.PRINCIPAL.Controllers
         }
 
         [HttpGet("ObtenerPendientesValidacion")]
+        //[Authorize(Roles = "Administrador,Atención")]
         public IActionResult ObtenerPendientesValidacion()
         {
             try
@@ -393,6 +446,7 @@ namespace H.API.PRINCIPAL.Controllers
         }
 
         [HttpPost("AprobarVenta")]
+        //[Authorize(Roles = "Administrador,Atención")]
         public IActionResult AprobarVenta([FromBody] AprobarRechazarVentaDTO dto)
         {
             try
@@ -410,7 +464,8 @@ namespace H.API.PRINCIPAL.Controllers
             }
         }
 
-        [HttpPost("RechazarVenta")]
+[HttpPost("RechazarVenta")]
+        //[Authorize(Roles = "Administrador,Atención")]
         public IActionResult RechazarVenta([FromBody] AprobarRechazarVentaDTO dto)
         {
             try
@@ -423,6 +478,26 @@ namespace H.API.PRINCIPAL.Controllers
                 var service = new VentaService(unitOfWork);
                 service.RechazarVenta(dto.IdVenta, dto.MotivoRechazo, dto.Usuario);
                 return Ok(new { success = true, message = "Venta rechazada correctamente" });
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult(ex, User);
+            }
+        }
+
+        [HttpPost("EmitirComprobante")]
+        public IActionResult EmitirComprobante([FromBody] EmitirComprobanteDTO dto)
+        {
+            try
+            {
+                if (dto?.IdVenta <= 0)
+                    return BadRequest(new { success = false, message = "ID de venta inválido" });
+                if (dto.IdTipoComprobante <= 0)
+                    return BadRequest(new { success = false, message = "Tipo de comprobante requerido" });
+
+                var service = new VentaService(unitOfWork);
+                var comprobante = service.EmitirComprobante(dto.IdVenta, dto.IdTipoComprobante, dto.Usuario ?? "admin");
+                return Ok(new { success = true, message = "Comprobante emitido correctamente", comprobante });
             }
             catch (Exception ex)
             {
@@ -507,13 +582,27 @@ namespace H.API.PRINCIPAL.Controllers
         }
 
         [HttpPost("CompletarEntrega")]
-        public IActionResult CompletarEntrega(int idDelivery, string usuario)
+        public IActionResult CompletarEntrega(int idDelivery, string usuario, decimal? montoCobrado = null, int idMetodoPago = 1)
         {
             try
             {
                 var service = new VentaService(unitOfWork);
-                service.CompletarEntrega(idDelivery, usuario);
+                service.CompletarEntrega(idDelivery, usuario, montoCobrado, idMetodoPago);
                 return Ok(true);
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult(ex, User);
+            }
+        }
+
+        [HttpPost("MarcarEntregado")]
+        public IActionResult MarcarEntregado(int idVenta, string usuario = "admin")
+        {
+            try
+            {
+                new VentaService(unitOfWork).MarcarEntregado(idVenta, usuario);
+                return Ok(new { success = true, message = "Pedido entregado y comprobante generado correctamente" });
             }
             catch (Exception ex)
             {
@@ -543,6 +632,32 @@ namespace H.API.PRINCIPAL.Controllers
             {
                 var service = new VentaService(unitOfWork);
                 return Ok(service.ObtenerGestionRepartidores());
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult(ex, User);
+            }
+        }
+
+        [HttpGet("HistorialRepartidor")]
+        public IActionResult HistorialRepartidor(int idPersona, int pagina = 1, int tamanioPagina = 8)
+        {
+            try
+            {
+                return Ok(new VentaService(unitOfWork).ObtenerHistorialRepartidor(idPersona, pagina, tamanioPagina));
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult(ex, User);
+            }
+        }
+
+        [HttpGet("GananciasRepartidor")]
+        public IActionResult GananciasRepartidor(int idPersona)
+        {
+            try
+            {
+                return Ok(new VentaService(unitOfWork).ObtenerGananciasRepartidor(idPersona));
             }
             catch (Exception ex)
             {

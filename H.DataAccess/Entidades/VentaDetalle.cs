@@ -16,6 +16,14 @@ namespace H.DataAccess.Entidades
         public string? TamanoPersonalizado { get; set; }
         public string? DecoracionPersonalizada { get; set; }
         public string? ObservacionesPersonalizadas { get; set; }
+        public string? RellenoPersonalizado { get; set; }
+        public int? PisosPersonalizados { get; set; }
+        public string? ColorDecoracionPersonalizada { get; set; }
+        public string? CoberturaPersonalizada { get; set; }
+        public int? PorcionesPersonalizadas { get; set; }
+        public string? EventoPersonalizado { get; set; }
+        public DateTime? FechaEntregaSolicitada { get; set; }
+        public string? ImagenReferencia { get; set; }
         public decimal? PrecioBase { get; set; }
         public decimal? PrecioPersonalizacion { get; set; }
         public decimal? PrecioFinal { get; set; }

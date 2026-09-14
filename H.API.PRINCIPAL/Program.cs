@@ -45,6 +45,7 @@ builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 // ============================================
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IEntradaInsumoService, EntradaInsumoService>();
+builder.Services.AddScoped<IChatService, ChatService>();
 
 // ============================================
 // CONTROLLERS
@@ -90,12 +91,10 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("UI-FrontEnd", policy =>
     {
-        policy.WithOrigins(
-            "http://localhost:4200",
-            "https://tortasyani.netlify.app"
-        )
-        .AllowAnyHeader()
-        .AllowAnyMethod();
+        policy
+            .AllowAnyOrigin()
+            .AllowAnyHeader()
+            .AllowAnyMethod();
     });
 });
 
@@ -152,7 +151,105 @@ using (var scope = app.Services.CreateScope())
         var context = services.GetRequiredService<sistemContext>();
         var canConnect = await context.Database.CanConnectAsync();
         if (canConnect)
+        {
+            await context.Database.ExecuteSqlRawAsync(@"
+IF NOT EXISTS (SELECT 1 FROM dbo.TEstadoVenta WHERE Nombre = 'Entregado')
+    INSERT INTO dbo.TEstadoVenta (Nombre, Activo, UsuarioCreacion, FechaCreacion)
+    VALUES ('Entregado', 1, 'sistema', GETDATE());
+");
+            await context.Database.ExecuteSqlRawAsync(@"
+IF OBJECT_ID('dbo.TConfiguracionDelivery', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.TConfiguracionDelivery
+    (
+        Id INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        CostoBase DECIMAL(10,2) NOT NULL DEFAULT (5.00),
+        CostoPorKilometro DECIMAL(10,2) NOT NULL DEFAULT (1.50),
+        LatitudCentro DECIMAL(10,6) NOT NULL DEFAULT (-13.531950),
+        LongitudCentro DECIMAL(10,6) NOT NULL DEFAULT (-71.967460),
+        RadioMaximoKm DECIMAL(10,2) NOT NULL DEFAULT (35.00),
+        Activo BIT NOT NULL DEFAULT (1),
+        UsuarioCreacion NVARCHAR(100) NOT NULL DEFAULT ('sistema'),
+        UsuarioModificacion NVARCHAR(100) NULL,
+        FechaCreacion DATETIME NOT NULL DEFAULT (GETDATE()),
+        FechaModificacion DATETIME NULL
+    );
+END
+IF NOT EXISTS (SELECT 1 FROM dbo.TConfiguracionDelivery WHERE Activo = 1)
+    INSERT INTO dbo.TConfiguracionDelivery
+    (CostoBase, CostoPorKilometro, LatitudCentro, LongitudCentro, RadioMaximoKm, Activo, UsuarioCreacion, FechaCreacion)
+    VALUES (5.00, 1.50, -13.531950, -71.967460, 35.00, 1, 'sistema', GETDATE());");
+            await context.Database.ExecuteSqlRawAsync(@"
+IF OBJECT_ID('dbo.TTortaOpcion', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.TTortaOpcion
+    (
+        Id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_TTortaOpcion PRIMARY KEY,
+        IdTorta INT NOT NULL,
+        Tipo NVARCHAR(20) NOT NULL,
+        Valor NVARCHAR(150) NOT NULL,
+        PrecioExtra DECIMAL(10,2) NOT NULL CONSTRAINT DF_TTortaOpcion_PrecioExtra DEFAULT (0),
+        Maximo INT NULL,
+        Orden INT NOT NULL CONSTRAINT DF_TTortaOpcion_Orden DEFAULT (0),
+        Activo BIT NOT NULL CONSTRAINT DF_TTortaOpcion_Activo DEFAULT (1),
+        UsuarioCreacion NVARCHAR(100) NOT NULL CONSTRAINT DF_TTortaOpcion_UsuarioCreacion DEFAULT ('sistema'),
+        UsuarioModificacion NVARCHAR(100) NULL,
+        FechaCreacion DATETIME NOT NULL CONSTRAINT DF_TTortaOpcion_FechaCreacion DEFAULT (GETDATE()),
+        FechaModificacion DATETIME NULL,
+        CONSTRAINT FK_TTortaOpcion_TTorta FOREIGN KEY (IdTorta) REFERENCES dbo.TTorta(Id),
+        CONSTRAINT UQ_TTortaOpcion_TortaTipoValor UNIQUE (IdTorta, Tipo, Valor)
+    );
+END");
+            await context.Database.ExecuteSqlRawAsync(@"
+IF COL_LENGTH('dbo.TTortaOpcion', 'ModoPrecio') IS NULL
+    ALTER TABLE dbo.TTortaOpcion ADD ModoPrecio NVARCHAR(20) NOT NULL CONSTRAINT DF_TTortaOpcion_ModoPrecio DEFAULT ('fijo');
+IF COL_LENGTH('dbo.TTortaOpcion', 'PrecioPorUnidad') IS NULL
+    ALTER TABLE dbo.TTortaOpcion ADD PrecioPorUnidad DECIMAL(10,2) NOT NULL CONSTRAINT DF_TTortaOpcion_PrecioPorUnidad DEFAULT (0);
+IF COL_LENGTH('dbo.TTortaOpcion', 'Obligatorio') IS NULL
+    ALTER TABLE dbo.TTortaOpcion ADD Obligatorio BIT NOT NULL CONSTRAINT DF_TTortaOpcion_Obligatorio DEFAULT (0);
+IF COL_LENGTH('dbo.TTortaOpcion', 'Minimo') IS NULL
+    ALTER TABLE dbo.TTortaOpcion ADD Minimo INT NULL;");
+            await context.Database.ExecuteSqlRawAsync(@"
+IF COL_LENGTH('dbo.TVenta', 'MontoPagado') IS NULL
+    ALTER TABLE dbo.TVenta ADD MontoPagado DECIMAL(10,2) NOT NULL CONSTRAINT DF_TVenta_MontoPagado DEFAULT (0);
+IF COL_LENGTH('dbo.TVenta', 'SaldoPendiente') IS NULL
+    ALTER TABLE dbo.TVenta ADD SaldoPendiente DECIMAL(10,2) NOT NULL CONSTRAINT DF_TVenta_SaldoPendiente DEFAULT (0);
+IF COL_LENGTH('dbo.TVenta', 'RequiereAnticipo') IS NULL
+    ALTER TABLE dbo.TVenta ADD RequiereAnticipo BIT NOT NULL CONSTRAINT DF_TVenta_RequiereAnticipo DEFAULT (0);");
+            await context.Database.ExecuteSqlRawAsync(@"
+IF COL_LENGTH('dbo.TEntregaDelivery', 'Latitud') IS NULL
+    ALTER TABLE dbo.TEntregaDelivery ADD Latitud DECIMAL(10,7) NULL;
+IF COL_LENGTH('dbo.TEntregaDelivery', 'Longitud') IS NULL
+    ALTER TABLE dbo.TEntregaDelivery ADD Longitud DECIMAL(10,7) NULL;
+IF COL_LENGTH('dbo.TEntregaDelivery', 'FechaAceptacion') IS NULL
+    ALTER TABLE dbo.TEntregaDelivery ADD FechaAceptacion DATETIME NULL;
+IF COL_LENGTH('dbo.TEntregaDelivery', 'FechaInicio') IS NULL
+    ALTER TABLE dbo.TEntregaDelivery ADD FechaInicio DATETIME NULL;
+IF COL_LENGTH('dbo.TEntregaDelivery', 'UsuarioAsignacion') IS NULL
+    ALTER TABLE dbo.TEntregaDelivery ADD UsuarioAsignacion NVARCHAR(100) NULL;");
+            await context.Database.ExecuteSqlRawAsync(@"
+IF COL_LENGTH('dbo.TVentaDetalle', 'RellenoPersonalizado') IS NULL
+    ALTER TABLE dbo.TVentaDetalle ADD RellenoPersonalizado NVARCHAR(100) NULL;
+IF COL_LENGTH('dbo.TVentaDetalle', 'PisosPersonalizados') IS NULL
+    ALTER TABLE dbo.TVentaDetalle ADD PisosPersonalizados INT NULL;
+IF COL_LENGTH('dbo.TVentaDetalle', 'ColorDecoracionPersonalizada') IS NULL
+    ALTER TABLE dbo.TVentaDetalle ADD ColorDecoracionPersonalizada NVARCHAR(100) NULL;
+IF COL_LENGTH('dbo.TVentaDetalle', 'TamanoPersonalizado') IS NULL
+    ALTER TABLE dbo.TVentaDetalle ADD TamanoPersonalizado NVARCHAR(50) NULL;
+IF COL_LENGTH('dbo.TVentaDetalle', 'SaborPersonalizado') IS NULL
+    ALTER TABLE dbo.TVentaDetalle ADD SaborPersonalizado NVARCHAR(100) NULL;
+IF COL_LENGTH('dbo.TVentaDetalle', 'CoberturaPersonalizada') IS NULL
+    ALTER TABLE dbo.TVentaDetalle ADD CoberturaPersonalizada NVARCHAR(100) NULL;
+IF COL_LENGTH('dbo.TVentaDetalle', 'PorcionesPersonalizadas') IS NULL
+    ALTER TABLE dbo.TVentaDetalle ADD PorcionesPersonalizadas INT NULL;
+IF COL_LENGTH('dbo.TVentaDetalle', 'EventoPersonalizado') IS NULL
+    ALTER TABLE dbo.TVentaDetalle ADD EventoPersonalizado NVARCHAR(100) NULL;
+IF COL_LENGTH('dbo.TVentaDetalle', 'FechaEntregaSolicitada') IS NULL
+    ALTER TABLE dbo.TVentaDetalle ADD FechaEntregaSolicitada DATETIME NULL;
+IF COL_LENGTH('dbo.TVentaDetalle', 'ImagenReferencia') IS NULL
+    ALTER TABLE dbo.TVentaDetalle ADD ImagenReferencia NVARCHAR(500) NULL;");
             Console.WriteLine("✅ Conexión a SQL Server exitosa.");
+        }
         else
             Console.WriteLine("❌ No se pudo conectar a SQL Server.");
     }

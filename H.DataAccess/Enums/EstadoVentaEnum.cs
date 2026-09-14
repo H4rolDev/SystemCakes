@@ -13,6 +13,7 @@ namespace H.DataAccess.Enums
         Aprobada = 3,
         Rechazada = 4,
         Pagada = 5,
-        Cancelada = 6
+        Cancelada = 6,
+        Entregado = 7
     }
 }

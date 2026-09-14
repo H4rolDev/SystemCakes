@@ -3,12 +3,14 @@ using H.DataAccess.Models;
 using H.DataAccess.Helpers;
 using H.DTOs;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using System.Globalization;
 
 namespace H.API.PRINCIPAL.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = "Administrador")]
     public class ReporteController : ControllerBase
     {
         private IUnitOfWork unitOfWork;
@@ -126,7 +128,12 @@ namespace H.API.PRINCIPAL.Controllers
                     .ToList();
 
                 var totalVentas = unitOfWork.VentaRepository.GetBy(x => x.Activo).Sum(x => x.Total ?? 0);
-                var cantidadClientes = unitOfWork.ClienteRepository.GetBy(x => x.Activo).Count();
+                // TCliente es un modelo legado no registrado en sistemContext.
+                // Las ventas ya contienen la persona que realizó cada compra.
+                var cantidadClientes = ventasMesActual
+                    .Select(x => x.IdPersona)
+                    .Distinct()
+                    .Count();
                 var cantidadTortas = unitOfWork.TortaRepository.GetBy(x => x.Activo).Count();
                 var cantidadInsumos = unitOfWork.InsumoRepository.GetBy(x => x.Activo).Count();
 
@@ -143,8 +150,12 @@ namespace H.API.PRINCIPAL.Controllers
                     })
                     .ToList();
 
+                var ventasMesActualIds = ventasMesActual
+                    .Select(v => v.Id)
+                    .ToList();
+
                 var ventasPorCategoria = unitOfWork.VentaDetalleRepository.GetAll()
-                    .Where(d => ventasMesActual.Any(v => v.Id == d.IdVenta))
+                    .Where(d => ventasMesActualIds.Contains(d.IdVenta))
                     .Join(
                         unitOfWork.TortaRepository.GetAll(),
                         d => d.IdTorta,
@@ -246,7 +257,7 @@ namespace H.API.PRINCIPAL.Controllers
                 DateTime desde = string.IsNullOrEmpty(fechaDesde) ? DateTime.Today.AddMonths(-1) : DateTime.Parse(fechaDesde);
                 DateTime hasta = string.IsNullOrEmpty(fechaHasta) ? DateTime.Today.AddDays(1) : DateTime.Parse(fechaHasta).AddDays(1);
 
-                var clientes = unitOfWork.ClienteRepository.GetBy(x => x.Activo).ToList();
+                var clientes = unitOfWork.PersonaRepository.GetBy(x => x.Activo).ToList();
                 var personas = unitOfWork.PersonaRepository.GetAll().ToList();
 
                 var ventas = unitOfWork.VentaRepository.GetBy(x => x.FechaVenta >= desde && x.FechaVenta < hasta && x.Activo).ToList();

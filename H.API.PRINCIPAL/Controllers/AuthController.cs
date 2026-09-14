@@ -129,7 +129,7 @@ namespace H.API.PRINCIPAL.Controllers
         /// Registro de nuevos administradores (solo admin puede registrar)
         /// </summary>
         [HttpPost("RegisterAdministrador")]
-        //[Authorize(Roles = "Administrador")] // ← Solo admins pueden acceder
+        [Authorize(Roles = "Administrador")]
         public async Task<IActionResult> RegisterAdministrador([FromBody] RegisterAdministradorRequestDTO request)
         {
             try
@@ -183,12 +183,14 @@ namespace H.API.PRINCIPAL.Controllers
                 // Lista de usuarios a crear
                 var usuariosPrueba = new[]
                 {
-                    new { username = "admin", nombres = "Juan", apellidoPaterno = "Perez", rolId = 1, rolNombre = "Administrador", documento = "10000001" },
+                    new { username = "admineric", nombres = "Ericson David", apellidoPaterno = "Mendoza", rolId = 1, rolNombre = "Administrador", documento = "10000001" },
+                    new { username = "adminyane", nombres = "Yaneth", apellidoPaterno = "Llamosa", rolId = 1, rolNombre = "Administrador", documento = "10000001" },
                     new { username = "atencion", nombres = "Maria", apellidoPaterno = "Lopez", rolId = 2, rolNombre = "Atención", documento = "10000002" },
                     new { username = "produccion", nombres = "Carlos", apellidoPaterno = "Mendoza", rolId = 3, rolNombre = "Producción", documento = "10000003" },
                     new { username = "repartidor1", nombres = "Pedro", apellidoPaterno = "Torres", rolId = 4, rolNombre = "Repartidor", documento = "10000004" },
                     new { username = "repartidor2", nombres = "Luis", apellidoPaterno = "Garcia", rolId = 4, rolNombre = "Repartidor", documento = "10000005" },
-                    new { username = "cliente1", nombres = "Ana", apellidoPaterno = "Ramirez", rolId = 5, rolNombre = "Cliente", documento = "10000006" }
+                    new { username = "cliente1", nombres = "Ana", apellidoPaterno = "Ramirez", rolId = 5, rolNombre = "Cliente", documento = "10000006" },
+                    new { username = "cliente2", nombres = "Olinda", apellidoPaterno = "Bueno", rolId = 5, rolNombre = "Cliente", documento = "10000006" }
                 };
 
                 foreach (var u in usuariosPrueba)

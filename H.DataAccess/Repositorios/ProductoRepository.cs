@@ -116,10 +116,10 @@ namespace H.DataAccess.Repositorios
         {
             try
             {
-                var query = "SP_Producto_ListadoActivo_Combo";
+                var query = @"SELECT Id, IdCategoria, NombreProducto, ISNULL(NombreCategoria, '') as NombreCategoria, Descripcion, Stock, CostoUnitario, CostoTotal, ISNULL(Igv, 0) as Igv FROM Productos";
                 using (var conn = connectionFactory.GetConnection)
                 {
-                    var rpta = SqlMapper.Query<ProductoListadoDTO>(conn, query, param: null, commandType: CommandType.StoredProcedure);
+                    var rpta = SqlMapper.Query<ProductoListadoDTO>(conn, query, param: null, commandType: CommandType.Text);
                     return rpta.ToList();
                 }
             }

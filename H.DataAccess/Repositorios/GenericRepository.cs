@@ -47,7 +47,31 @@ namespace H.DataAccess.Repositorios
         {
             try
             {
-                entities.Update(entidad);
+                var trackedEntry = context.ChangeTracker.Entries<TEntity>()
+                    .FirstOrDefault(e => e.Entity.Id == entidad.Id);
+                
+                if (trackedEntry != null)
+                {
+                    CopyProperties(entidad, trackedEntry.Entity);
+                    return entidad.Id;
+                }
+
+                var previousBehavior = context.ChangeTracker.QueryTrackingBehavior;
+                context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.TrackAll;
+                try
+                {
+                    var existing = entities.FirstOrDefault(e => e.Id == entidad.Id);
+                    if (existing != null)
+                    {
+                        CopyProperties(entidad, existing);
+                        return entidad.Id;
+                    }
+                }
+                finally
+                {
+                    context.ChangeTracker.QueryTrackingBehavior = previousBehavior;
+                }
+                
                 return entidad.Id;
             }
             catch (Exception ex)
@@ -56,6 +80,17 @@ namespace H.DataAccess.Repositorios
                 error.Message = ex.Message;
                 LogErp.EscribirDisco(error);
                 throw ex;
+            }          
+        }
+
+        private static void CopyProperties(TEntity source, TEntity target)
+        {
+            var props = typeof(TEntity).GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
+                .Where(p => p.Name != nameof(BaseEntity.Id) && p.CanRead && p.CanWrite);
+            foreach (var prop in props)
+            {
+                var value = prop.GetValue(source);
+                prop.SetValue(target, value);
             }
         }
 
@@ -113,7 +148,34 @@ namespace H.DataAccess.Repositorios
             {
                 if (list == null)
                     throw new ArgumentNullException("El listado a Actualizar es nulo");
-                entities.UpdateRange(list);
+
+                var previousBehavior = context.ChangeTracker.QueryTrackingBehavior;
+                context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.TrackAll;
+                try
+                {
+                    foreach (var entidad in list)
+                    {
+                        var trackedEntry = context.ChangeTracker.Entries<TEntity>()
+                            .FirstOrDefault(e => e.Entity.Id == entidad.Id);
+                        
+                        if (trackedEntry != null)
+                        {
+                            CopyProperties(entidad, trackedEntry.Entity);
+                        }
+                        else
+                        {
+                            var existing = entities.FirstOrDefault(e => e.Id == entidad.Id);
+                            if (existing != null)
+                            {
+                                CopyProperties(entidad, existing);
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    context.ChangeTracker.QueryTrackingBehavior = previousBehavior;
+                }
                 return true;
             }
             catch (Exception ex)

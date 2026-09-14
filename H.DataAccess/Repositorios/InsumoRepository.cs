@@ -10,6 +10,7 @@ using H.DataAccess.Enums;
 using H.DataAccess.Infraestructure;
 using H.DataAccess.Log;
 using H.DataAccess.Repositorios;
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Dapper;
 using System.Data;
@@ -52,9 +53,29 @@ namespace H.DataAccess.Repositorios
         {
             try
             {
-                var modelo = mapper.Map<TInsumo>(entidad);
-                base.Update(modelo);
-                return modelo;
+                var previousBehavior = context.ChangeTracker.QueryTrackingBehavior;
+                context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.TrackAll;
+                try
+                {
+                    var tracked = context.TInsumo.FirstOrDefault(e => e.Id == entidad.Id);
+                    if (tracked == null)
+                        throw new Exception($"Insumo con Id {entidad.Id} no encontrado para actualizar.");
+
+                    tracked.Nombre = entidad.Nombre;
+                    tracked.IdUnidadMedida = entidad.IdUnidadMedida;
+                    tracked.StockActual = entidad.StockActual;
+                    tracked.StockMinimo = entidad.StockMinimo;
+                    tracked.CostoUnitario = entidad.CostoUnitario;
+                    tracked.Activo = entidad.Activo;
+                    tracked.UsuarioModificacion = entidad.UsuarioModificacion;
+                    tracked.FechaModificacion = entidad.FechaModificacion;
+
+                    return tracked;
+                }
+                finally
+                {
+                    context.ChangeTracker.QueryTrackingBehavior = previousBehavior;
+                }
             }
             catch (Exception ex)
             {

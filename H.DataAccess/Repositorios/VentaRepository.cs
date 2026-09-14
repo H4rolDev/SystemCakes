@@ -218,8 +218,11 @@ namespace H.DataAccess.Repositorios
                         p.Nombres + ' ' + p.ApellidoPaterno AS Cliente,
                         v.Total,
                         v.NumeroOperacion,
-                        v.IdEstadoVenta,
-                        e.Nombre AS Estado
+                         v.IdEstadoVenta,
+                         e.Nombre AS Estado,
+                         CAST(CASE WHEN EXISTS (SELECT 1 FROM TVentaDetalle vd WHERE vd.IdVenta = v.Id AND (vd.MensajePersonalizado IS NOT NULL OR vd.TamanoPersonalizado IS NOT NULL OR vd.SaborPersonalizado IS NOT NULL OR vd.RellenoPersonalizado IS NOT NULL OR vd.PisosPersonalizados IS NOT NULL OR vd.ColorDecoracionPersonalizada IS NOT NULL OR vd.DecoracionPersonalizada IS NOT NULL OR vd.CoberturaPersonalizada IS NOT NULL OR vd.PorcionesPersonalizadas IS NOT NULL OR vd.ImagenReferencia IS NOT NULL)) THEN 1 ELSE 0 END AS BIT) AS TienePersonalizacion,
+                         (SELECT COUNT(1) FROM TVentaDetalle vd WHERE vd.IdVenta = v.Id AND (vd.MensajePersonalizado IS NOT NULL OR vd.TamanoPersonalizado IS NOT NULL OR vd.SaborPersonalizado IS NOT NULL OR vd.RellenoPersonalizado IS NOT NULL OR vd.PisosPersonalizados IS NOT NULL OR vd.ColorDecoracionPersonalizada IS NOT NULL OR vd.DecoracionPersonalizada IS NOT NULL OR vd.PorcionesPersonalizadas IS NOT NULL)) AS CantidadPersonalizadas,
+                         (SELECT MIN(vd.FechaEntregaSolicitada) FROM TVentaDetalle vd WHERE vd.IdVenta = v.Id) AS FechaEntregaSolicitada
                     FROM TVenta v
                     INNER JOIN TPersona p ON v.IdPersona = p.Id
                     INNER JOIN TEstadoVenta e ON v.IdEstadoVenta = e.Id

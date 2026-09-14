@@ -6,6 +6,7 @@ using H.DataAccess.Models;
 using H.DataAccess.UnitofWork;
 using H.DTOs;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 
 namespace H.Services
@@ -280,8 +281,24 @@ namespace H.Services
         {
             var fecha = Fecha.Hoy;
 
-            if (dto == null || !dto.Detalles.Any())
+
+            if (dto == null || dto.Detalles == null || dto.Detalles.Count == 0)
                 throw new Exception("Venta inválida.");
+
+            if (dto.Pagos == null || dto.Pagos.Count == 0)
+                throw new Exception("La venta debe incluir al menos un pago.");
+
+            if (dto.IdTipoEntrega != (int)TipoEntregaEnum.RecojoTienda &&
+                dto.IdTipoEntrega != (int)TipoEntregaEnum.Delivery)
+                throw new Exception("Tipo de entrega inválido.");
+
+            if (dto.IdPersona <= 0 || string.IsNullOrWhiteSpace(dto.Usuario))
+                throw new Exception("Cliente y usuario son requeridos.");
+
+            if (dto.IdTipoEntrega == (int)TipoEntregaEnum.Delivery &&
+                (dto.Entrega == null || string.IsNullOrWhiteSpace(dto.Entrega.Direccion) ||
+                 string.IsNullOrWhiteSpace(dto.Entrega.Telefono)))
+                throw new Exception("Dirección y teléfono de delivery son requeridos.");
 
             if (dto.Comprobante != null)
             {
@@ -298,6 +315,9 @@ namespace H.Services
 
             foreach (var d in dto.Detalles)
             {
+                if (d.IdTorta <= 0 || d.Cantidad <= 0 || d.Pisos is <= 0 || d.Porciones is <= 0)
+                    throw new Exception("Detalle de venta inválido.");
+
                 var torta = _unitOfWork.TortaRepository.GetById(d.IdTorta);
 
                 if (torta == null)
@@ -306,19 +326,70 @@ namespace H.Services
                 if (torta.StockDisponible < d.Cantidad)
                     throw new Exception($"Stock insuficiente para {torta.Nombre}");
 
-                var precio = d.PrecioBase + d.PrecioPersonalizacion;
+                var precioBase = decimal.Round(torta.PrecioVenta ?? 0, 2);
+                var precioPersonalizacion = CalcularPrecioPersonalizacion(torta, d);
+                d.PrecioBase = precioBase;
+                d.PrecioPersonalizacion = precioPersonalizacion;
+                var precio = precioBase + precioPersonalizacion;
                 subTotal += precio * d.Cantidad;
             }
 
             decimal costoDelivery = 0;
             if (dto.IdTipoEntrega == (int)TipoEntregaEnum.Delivery && dto.Entrega != null)
-                costoDelivery = dto.Entrega.CostoDelivery;
+            {
+                var deliveryConfig = DeliveryPricingService.GetOrCreate(_unitOfWork);
+                costoDelivery = DeliveryPricingService.CalculateCost(
+                    deliveryConfig, dto.Entrega.Latitud, dto.Entrega.Longitud);
+                dto.Entrega.CostoDelivery = costoDelivery;
+            }
 
             var totalVenta = subTotal + costoDelivery;
             var totalPagos = dto.Pagos.Sum(x => x.Monto);
+            var metodosPago = dto.Pagos
+                .Select(p => _unitOfWork.MetodoPagoRepository.GetById(p.IdMetodoPago)?.Nombre ?? string.Empty)
+                .ToList();
+            if (metodosPago.Any(string.IsNullOrWhiteSpace))
+                throw new Exception("Uno de los métodos de pago no es válido.");
+            var esDelivery = dto.IdTipoEntrega == (int)TipoEntregaEnum.Delivery;
+            if (esDelivery && metodosPago.Any(nombre =>
+                    !EsMetodoPagoDeliveryPermitido(nombre)))
+                throw new Exception("Para delivery usa Yape, Plin, banca móvil o depósito. No se acepta efectivo ni tarjeta.");
 
-            if (totalPagos < totalVenta)
-                throw new Exception("Pago insuficiente.");
+            var esPagoEnEfectivo = metodosPago.All(EsMetodoPagoEfectivo);
+            var requiereAnticipo = !esPagoEnEfectivo;
+            var minimoAnticipo = decimal.Round(totalVenta * 0.5m, 2);
+
+            if (requiereAnticipo)
+            {
+                if (totalPagos <= minimoAnticipo)
+                    throw new Exception("El monto depositado debe ser mayor al 50% del total.");
+                if (totalPagos > totalVenta)
+                    throw new Exception("El monto depositado no puede superar el total de la venta.");
+                if (string.IsNullOrWhiteSpace(dto.ImagenComprobante))
+                    throw new Exception("El pago debe incluir un comprobante de pago.");
+            }
+            else if (totalPagos < totalVenta)
+            {
+                throw new Exception("El pago en efectivo se registra por el total de la venta y se cancela en tienda.");
+            }
+
+            // Reserva las unidades de forma atómica mientras el pago está pendiente.
+            // La salida definitiva se registra únicamente cuando el pago es aprobado.
+            var stockReservado = new List<(int IdTorta, int Cantidad)>();
+            try
+            {
+                foreach (var detalle in dto.Detalles)
+                {
+                    ReservarStock(detalle.IdTorta, detalle.Cantidad);
+                    stockReservado.Add((detalle.IdTorta, detalle.Cantidad));
+                }
+            }
+            catch
+            {
+                foreach (var reserva in stockReservado)
+                    LiberarStock(reserva.IdTorta, reserva.Cantidad);
+                throw;
+            }
 
             var tieneComprobante = !string.IsNullOrEmpty(dto.ImagenComprobante);
             var estadoInicial = tieneComprobante ? (int)EstadoVentaEnum.EsperandoValidacion : (int)EstadoVentaEnum.Pagada;
@@ -331,6 +402,9 @@ namespace H.Services
                 FechaVenta = fecha,
                 SubTotal = subTotal,
                 Total = totalVenta,
+                MontoPagado = decimal.Round(totalPagos, 2),
+                SaldoPendiente = decimal.Round(Math.Max(0, totalVenta - totalPagos), 2),
+                RequiereAnticipo = requiereAnticipo,
                 Activo = true,
                 UsuarioCreacion = dto.Usuario,
                 FechaCreacion = fecha,
@@ -355,6 +429,19 @@ namespace H.Services
                     PrecioPersonalizacion = d.PrecioPersonalizacion,
                     PrecioFinal = precioFinal,
                     SubTotal = precioFinal * d.Cantidad,
+                    MensajePersonalizado = d.Mensaje,
+                    TamanoPersonalizado = d.Tamanio,
+                    SaborPersonalizado = d.Sabor,
+                    RellenoPersonalizado = d.Relleno,
+                    PisosPersonalizados = d.Pisos,
+                    ColorDecoracionPersonalizada = d.ColorDecoracion,
+                    DecoracionPersonalizada = d.Decoracion,
+                    CoberturaPersonalizada = d.Cobertura,
+                    PorcionesPersonalizadas = d.Porciones,
+                    EventoPersonalizado = d.Evento,
+                    FechaEntregaSolicitada = d.FechaEntrega,
+                    ImagenReferencia = d.ImagenReferencia,
+                    ObservacionesPersonalizacion = d.Observaciones,
                     Activo = true,
                     UsuarioCreacion = dto.Usuario,
                     FechaCreacion = fecha
@@ -363,26 +450,21 @@ namespace H.Services
                 _unitOfWork.VentaDetalleRepository.Add(detalle);
                 _unitOfWork.Commit();
 
-                // 🔥 MOVIMIENTO TORTA
-                var movimiento = new TMovimientoTorta
+                // El stock ya fue reservado atómicamente antes de crear la venta.
+                if (estadoInicial == (int)EstadoVentaEnum.Pagada)
                 {
-                    IdTorta = d.IdTorta,
-                    IdTipoMovimiento = (int)TipoMovimientoEnum.Venta,
-                    Cantidad = d.Cantidad,
-                    FechaMovimiento = fecha,
-                    Referencia = $"Venta #{venta.Id}",
-                    Activo = true,
-                    UsuarioCreacion = dto.Usuario,
-                    FechaCreacion = fecha
-                };
-
-                _unitOfWork.MovimientoTortaRepository.Add(movimiento);
-
-                // DESCONTAR STOCK
-                var torta = _unitOfWork.TortaRepository.GetById(d.IdTorta);
-                torta.StockDisponible -= d.Cantidad;
-
-                _unitOfWork.TortaRepository.Update(torta);
+                    _unitOfWork.MovimientoTortaRepository.Add(new TMovimientoTorta
+                    {
+                        IdTorta = d.IdTorta,
+                        IdTipoMovimiento = (int)TipoMovimientoEnum.Venta,
+                        Cantidad = d.Cantidad,
+                        FechaMovimiento = fecha,
+                        Referencia = $"Venta #{venta.Id}",
+                        Activo = true,
+                        UsuarioCreacion = dto.Usuario,
+                        FechaCreacion = fecha
+                    });
+                }
             }
 
             // PAGOS
@@ -414,22 +496,8 @@ namespace H.Services
                     TelefonoContacto = dto.Entrega.Telefono,
                     NombreContacto = dto.Entrega.NombreContacto,
                     CostoDelivery = dto.Entrega.CostoDelivery,
-                    Activo = true,
-                    UsuarioCreacion = dto.Usuario,
-                    FechaCreacion = fecha
-                });
-            }
-
-            // COMPROBANTE
-            if (dto.Comprobante != null)
-            {
-                _unitOfWork.ComprobanteVentaRepository.Add(new TComprobanteVenta
-                {
-                    IdVenta = venta.Id,
-                    IdTipoComprobante = dto.Comprobante.IdTipoComprobante,
-                    Serie = dto.Comprobante.Serie,
-                    Numero = dto.Comprobante.Numero,
-                    FechaEmision = fecha,
+                    Latitud = dto.Entrega.Latitud,
+                    Longitud = dto.Entrega.Longitud,
                     Activo = true,
                     UsuarioCreacion = dto.Usuario,
                     FechaCreacion = fecha
@@ -441,34 +509,146 @@ namespace H.Services
             return venta.Id;
         }
 
+        private decimal CalcularPrecioPersonalizacion(Torta torta, DetalleVentaDTO detalle)
+        {
+            if (torta.EsPersonalizable != true)
+            {
+                if (!string.IsNullOrWhiteSpace(detalle.Tamanio) || !string.IsNullOrWhiteSpace(detalle.Sabor) ||
+                    !string.IsNullOrWhiteSpace(detalle.Relleno) || !string.IsNullOrWhiteSpace(detalle.ColorDecoracion) ||
+                    !string.IsNullOrWhiteSpace(detalle.Decoracion) || !string.IsNullOrWhiteSpace(detalle.Cobertura) ||
+                    detalle.Pisos is > 1 || detalle.Porciones is > 0)
+                    throw new Exception($"La torta {torta.Nombre} no admite personalización.");
+                return 0;
+            }
+
+            var seleccionadas = new[]
+            {
+                (Tipo: "tamanio", Valor: detalle.Tamanio),
+                (Tipo: "sabor", Valor: detalle.Sabor),
+                (Tipo: "relleno", Valor: detalle.Relleno),
+                (Tipo: "color", Valor: detalle.ColorDecoracion),
+                (Tipo: "decoracion", Valor: detalle.Decoracion),
+                (Tipo: "cobertura", Valor: detalle.Cobertura),
+                (Tipo: "evento", Valor: detalle.Evento),
+                (Tipo: "pisos", Valor: detalle.Pisos?.ToString()),
+                (Tipo: "porciones", Valor: detalle.Porciones?.ToString())
+            };
+            var opciones = _unitOfWork.TortaOpcionRepository.ObtenerPorTorta(torta.Id, true);
+            foreach (var grupo in opciones.Where(x => x.Obligatorio).GroupBy(x => x.Tipo, StringComparer.OrdinalIgnoreCase))
+            {
+                var seleccion = seleccionadas.FirstOrDefault(x => x.Tipo.Equals(grupo.Key, StringComparison.OrdinalIgnoreCase));
+                if (string.IsNullOrWhiteSpace(seleccion.Valor))
+                    throw new Exception($"Debes seleccionar una opción de {grupo.Key} para {torta.Nombre}.");
+            }
+            decimal extra = 0;
+            foreach (var seleccion in seleccionadas.Where(x => !string.IsNullOrWhiteSpace(x.Valor)))
+            {
+                var grupoConfigurado = opciones.Any(x => x.Tipo.Equals(seleccion.Tipo, StringComparison.OrdinalIgnoreCase));
+                if (!grupoConfigurado)
+                    continue;
+                var opcion = opciones.FirstOrDefault(x => x.Tipo.Equals(seleccion.Tipo, StringComparison.OrdinalIgnoreCase) &&
+                    ValoresCoinciden(x.Valor, seleccion.Valor!, seleccion.Tipo));
+                if (opcion == null)
+                    opcion = opciones.FirstOrDefault(x => x.Tipo.Equals(seleccion.Tipo, StringComparison.OrdinalIgnoreCase) && x.ModoPrecio == "incremental");
+                if (opcion == null)
+                    throw new Exception($"La opción '{seleccion.Valor}' no está disponible para {torta.Nombre}.");
+                if (opcion.Maximo.HasValue && int.TryParse(seleccion.Valor, out var numericValue) && numericValue > opcion.Maximo.Value)
+                    throw new Exception($"La opción '{seleccion.Valor}' supera el máximo permitido.");
+                if (opcion.ModoPrecio == "incremental" && int.TryParse(seleccion.Valor, out var units))
+                    extra += opcion.PrecioPorUnidad * Math.Max(0, units - (opcion.Minimo ?? 1));
+                else
+                    extra += opcion.PrecioExtra;
+            }
+            if (!string.IsNullOrWhiteSpace(detalle.Mensaje) && detalle.Mensaje.Length > 100)
+                throw new Exception("El mensaje personalizado no puede superar 100 caracteres.");
+            if (!string.IsNullOrWhiteSpace(detalle.Observaciones) && detalle.Observaciones.Length > 500)
+                throw new Exception("Las observaciones no pueden superar 500 caracteres.");
+            return decimal.Round(extra, 2);
+        }
+
+        private static bool ValoresCoinciden(string configurado, string seleccionado, string tipo)
+        {
+            if (configurado.Equals(seleccionado.Trim(), StringComparison.OrdinalIgnoreCase)) return true;
+            if (tipo is not ("pisos" or "porciones")) return false;
+            var configuredNumber = new string(configurado.Where(char.IsDigit).ToArray());
+            var selectedNumber = new string(seleccionado.Where(char.IsDigit).ToArray());
+            return configuredNumber.Length > 0 && configuredNumber == selectedNumber;
+        }
+
+        private static bool EsMetodoPagoDeliveryPermitido(string nombre)
+        {
+            var nombreNormalizado = nombre.ToLowerInvariant();
+            return nombreNormalizado.Contains("yape") ||
+                   nombreNormalizado.Contains("plin") ||
+                   nombreNormalizado.Contains("deposito") ||
+                   nombreNormalizado.Contains("depósito") ||
+                   nombreNormalizado.Contains("transferencia") ||
+                   nombreNormalizado.Contains("banca");
+        }
+
+        private static bool EsMetodoPagoEfectivo(string nombre)
+        {
+            return nombre.Trim().ToLowerInvariant().Contains("efectivo");
+        }
+
+        private void ReservarStock(int idTorta, int cantidad)
+        {
+            var filas = _unitOfWork.Context.Database.ExecuteSqlInterpolated($@"
+                UPDATE TTorta
+                SET StockDisponible = StockDisponible - {cantidad}
+                WHERE Id = {idTorta} AND Activo = 1 AND StockDisponible >= {cantidad}");
+
+            if (filas != 1)
+                throw new Exception("El stock cambió mientras se registraba el pedido. Actualiza el catálogo e inténtalo nuevamente.");
+        }
+
+        private void LiberarStock(int idTorta, int cantidad)
+        {
+            _unitOfWork.Context.Database.ExecuteSqlInterpolated($@"
+                UPDATE TTorta
+                SET StockDisponible = StockDisponible + {cantidad}
+                WHERE Id = {idTorta} AND Activo = 1");
+        }
+
         public void CancelarVenta(int idVenta, string motivo, string usuario)
         {
             var venta = _unitOfWork.VentaRepository.GetById(idVenta);
 
+            if (venta == null)
+                throw new Exception("Venta no encontrada.");
+
             if (venta.IdEstadoVenta == (int)EstadoVentaEnum.Cancelada)
                 throw new Exception("Ya cancelada.");
+            if (venta.IdEstadoVenta == (int)EstadoVentaEnum.Rechazada)
+                throw new Exception("Una venta rechazada ya liberó su reserva de stock.");
+            if (venta.IdEstadoVenta == (int)EstadoVentaEnum.Entregado)
+                throw new Exception("No se puede cancelar una venta ya entregada.");
 
             var detalles = _unitOfWork.VentaDetalleRepository
                 .GetBy(x => x.IdVenta == idVenta).ToList();
 
+            var debeLiberarStock = venta.IdEstadoVenta != (int)EstadoVentaEnum.Rechazada &&
+                                   venta.IdEstadoVenta != (int)EstadoVentaEnum.Cancelada &&
+                                   venta.IdEstadoVenta != (int)EstadoVentaEnum.Entregado;
+
             foreach (var d in detalles)
             {
-                var torta = _unitOfWork.TortaRepository.GetById(d.IdTorta);
+                if (debeLiberarStock)
+                    LiberarStock(d.IdTorta, (int)d.Cantidad);
 
-                torta.StockDisponible += (int)d.Cantidad;
-                _unitOfWork.TortaRepository.Update(torta);
-
-                // 🔥 MOVIMIENTO REVERSA
-                _unitOfWork.MovimientoTortaRepository.Add(new TMovimientoTorta
+                if (debeLiberarStock)
                 {
-                    IdTorta = d.IdTorta,
-                    IdTipoMovimiento = (int)TipoMovimientoEnum.Anulacion,
-                    Cantidad = d.Cantidad,
-                    FechaMovimiento = Fecha.Hoy,
-                    Referencia = $"Cancelación Venta #{idVenta}",
-                    UsuarioCreacion = usuario,
-                    Activo = true
-                });
+                    _unitOfWork.MovimientoTortaRepository.Add(new TMovimientoTorta
+                    {
+                        IdTorta = d.IdTorta,
+                        IdTipoMovimiento = (int)TipoMovimientoEnum.Anulacion,
+                        Cantidad = d.Cantidad,
+                        FechaMovimiento = Fecha.Hoy,
+                        Referencia = $"Cancelación Venta #{idVenta}",
+                        UsuarioCreacion = usuario,
+                        Activo = true
+                    });
+                }
             }
 
             venta.IdEstadoVenta = (int)EstadoVentaEnum.Cancelada;
@@ -489,7 +669,7 @@ namespace H.Services
 
         public IEnumerable<object> Listado()
         {
-            return _unitOfWork.VentaRepository.GetAll()
+            return _unitOfWork.VentaRepository.GetAll().AsEnumerable()
                 .Select(x => new
                 {
                     x.Id,
@@ -497,8 +677,25 @@ namespace H.Services
                     x.Total,
                     x.IdEstadoVenta,
                     x.IdTipoEntrega,
-                    x.UsuarioCreacion
+                    x.UsuarioCreacion,
+                    clienteNombre = ObtenerNombreCliente(x.IdPersona),
+                    clienteTelefono = _unitOfWork.PersonaRepository.GetById(x.IdPersona)?.Telefono,
+                    tienePersonalizacion = _unitOfWork.VentaDetalleRepository.GetBy(d => d.IdVenta == x.Id).Any(d =>
+                        d.MensajePersonalizado != null || d.TamanoPersonalizado != null || d.SaborPersonalizado != null ||
+                        d.RellenoPersonalizado != null || d.PisosPersonalizados != null || d.ColorDecoracionPersonalizada != null ||
+                        d.DecoracionPersonalizada != null || d.CoberturaPersonalizada != null || d.PorcionesPersonalizadas != null || d.ImagenReferencia != null),
+                    cantidadPersonalizadas = _unitOfWork.VentaDetalleRepository.GetBy(d => d.IdVenta == x.Id).Count(d =>
+                        d.MensajePersonalizado != null || d.TamanoPersonalizado != null || d.SaborPersonalizado != null ||
+                        d.RellenoPersonalizado != null || d.PisosPersonalizados != null || d.ColorDecoracionPersonalizada != null ||
+                        d.DecoracionPersonalizada != null || d.CoberturaPersonalizada != null || d.PorcionesPersonalizadas != null || d.ImagenReferencia != null),
+                    fechaEntregaSolicitada = _unitOfWork.VentaDetalleRepository.GetBy(d => d.IdVenta == x.Id).Where(d => d.FechaEntregaSolicitada != null).Select(d => d.FechaEntregaSolicitada).FirstOrDefault()
                 }).ToList();
+        }
+
+        private string ObtenerNombreCliente(int idPersona)
+        {
+            var persona = _unitOfWork.PersonaRepository.GetById(idPersona);
+            return persona == null ? "Cliente" : string.Join(" ", new[] { persona.Nombres, persona.ApellidoPaterno }.Where(value => !string.IsNullOrWhiteSpace(value)));
         }
 
         public object Detalle(int idVenta)
@@ -528,7 +725,8 @@ namespace H.Services
                     venta.Total,
                     venta.IdEstadoVenta,
                     venta.IdTipoEntrega,
-                    venta.UsuarioCreacion
+                    venta.UsuarioCreacion,
+                    venta.ImagenComprobante
                 },
                 cliente = new
                 {
@@ -544,8 +742,21 @@ namespace H.Services
                     d.PrecioBase,
                     d.PrecioPersonalizacion,
                     d.PrecioFinal,
-                    d.SubTotal
-                }).ToList(),
+                    d.SubTotal,
+                    tamanio = d.TamanoPersonalizado,
+                    sabor = d.SaborPersonalizado,
+                    relleno = d.RellenoPersonalizado,
+                     pisos = d.PisosPersonalizados,
+                     colorDecoracion = d.ColorDecoracionPersonalizada,
+                     decoracion = d.DecoracionPersonalizada,
+                     cobertura = d.CoberturaPersonalizada,
+                     porciones = d.PorcionesPersonalizadas,
+                     evento = d.EventoPersonalizado,
+                     fechaEntrega = d.FechaEntregaSolicitada,
+                     observaciones = d.ObservacionesPersonalizacion,
+                     imagenReferencia = d.ImagenReferencia,
+                     mensaje = d.MensajePersonalizado,
+                 }).ToList(),
                 pagos = pagos.Select(p => new
                 {
                     p.IdMetodoPago,
@@ -553,7 +764,28 @@ namespace H.Services
                     p.Monto,
                     p.NumeroOperacion
                 }).ToList(),
-                delivery,
+                delivery = delivery == null ? null : new
+                {
+                    delivery.Id,
+                    delivery.IdVenta,
+                    delivery.IdEstadoEntrega,
+                    delivery.IdPersonalRepartidor,
+                    nombreRepartidor = delivery.IdPersonalRepartidor.HasValue
+                        ? ObtenerNombrePersona(delivery.IdPersonalRepartidor.Value)
+                        : null,
+                    delivery.Direccion,
+                    delivery.Referencia,
+                    telefono = delivery.TelefonoContacto,
+                    delivery.NombreContacto,
+                    delivery.CostoDelivery,
+                    delivery.Latitud,
+                    delivery.Longitud,
+                    delivery.FechaAsignacion,
+                    delivery.FechaAceptacion,
+                    delivery.FechaInicio,
+                    delivery.FechaEntrega,
+                    delivery.UsuarioAsignacion
+                },
                 comprobante = comp != null ? new
                 {
                     comp.Serie,
@@ -566,6 +798,15 @@ namespace H.Services
         public VentaComprobanteDTO ObtenerComprobante(int idVenta)
         {
             var venta = _unitOfWork.VentaRepository.GetById(idVenta);
+            if (venta == null)
+                throw new Exception("Venta no encontrada.");
+
+            var comp = _unitOfWork.ComprobanteVentaRepository
+                .GetBy(x => x.IdVenta == idVenta).FirstOrDefault();
+
+            if (comp == null)
+                throw new Exception("El comprobante todavía no ha sido generado. Emítelo primero.");
+
             var persona = _unitOfWork.PersonaRepository.GetById(venta.IdPersona);
 
             var detalles = _unitOfWork.VentaDetalleRepository
@@ -573,9 +814,6 @@ namespace H.Services
 
             var pagos = _unitOfWork.PagoVentaRepository
                 .GetBy(x => x.IdVenta == idVenta).ToList();
-
-            var comp = _unitOfWork.ComprobanteVentaRepository
-                .GetBy(x => x.IdVenta == idVenta).FirstOrDefault();
 
             var delivery = _unitOfWork.EntregaDeliveryRepository
                 .GetBy(x => x.IdVenta == idVenta).FirstOrDefault();
@@ -590,8 +828,8 @@ namespace H.Services
                 Total = venta.Total,
                 Cliente = nombreCliente,
 
-                TipoComprobante = comp?.IdTipoComprobante.ToString(),
-                SerieNumero = comp != null ? $"{comp.Serie}-{comp.Numero}" : "",
+                 TipoComprobante = comp.IdTipoComprobante == 2 ? "Factura" : "Boleta",
+                 SerieNumero = $"{comp.Serie}-{comp.Numero}",
 
                 TipoEntrega = venta.IdTipoEntrega == 1 ? "Tienda" : "Delivery",
                 Direccion = delivery?.Direccion,
@@ -602,32 +840,197 @@ namespace H.Services
                     Cantidad = (int)x.Cantidad,
                     PrecioUnitario = x.PrecioFinal,
                     SubTotal = x.SubTotal
-                }).ToList(),
+                    ,Tamanio = x.TamanoPersonalizado
+                    ,Sabor = x.SaborPersonalizado
+                    ,Relleno = x.RellenoPersonalizado
+                     ,Pisos = x.PisosPersonalizados
+                     ,ColorDecoracion = x.ColorDecoracionPersonalizada
+                     ,Decoracion = x.DecoracionPersonalizada
+                     ,Cobertura = x.CoberturaPersonalizada
+                     ,Porciones = x.PorcionesPersonalizadas
+                     ,Evento = x.EventoPersonalizado
+                     ,FechaEntrega = x.FechaEntregaSolicitada
+                     ,Observaciones = x.ObservacionesPersonalizacion
+                     ,ImagenReferencia = x.ImagenReferencia
+                     ,Mensaje = x.MensajePersonalizado
+                 }).ToList(),
 
-                Pagos = pagos.Select(x => new PagoComprobanteDTO
+                 Pagos = pagos.Select(x => new PagoComprobanteDTO
                 {
                     Metodo = _unitOfWork.MetodoPagoRepository.GetById(x.IdMetodoPago).Nombre,
                     Monto = x.Monto
-                }).ToList()
+                 }).ToList(),
+                 Empresa = new EmpresaComprobanteDTO
+                 {
+                     Nombre = "Tortas Yani",
+                     Ruc = "10789234567",
+                     Direccion = "Av. Los Geranios 456, Lima",
+                     Telefono = "987 654 321"
+                 }
+             };
+        }
+
+        public void MarcarEntregado(int idVenta, string usuario)
+        {
+            var venta = _unitOfWork.VentaRepository.GetById(idVenta);
+            if (venta == null)
+                throw new Exception("Venta no encontrada.");
+            if (venta.IdEstadoVenta == (int)EstadoVentaEnum.Entregado)
+                return;
+            if (venta.IdEstadoVenta != (int)EstadoVentaEnum.Pagada &&
+                venta.IdEstadoVenta != (int)EstadoVentaEnum.Aprobada)
+                throw new Exception("Solo se puede entregar un pedido con el pago validado.");
+            if (venta.MontoPagado < (venta.Total ?? 0))
+                throw new Exception("No se puede entregar un pedido con saldo pendiente.");
+
+            var entrega = _unitOfWork.EntregaDeliveryRepository.GetBy(x => x.IdVenta == idVenta).FirstOrDefault();
+            if (venta.IdTipoEntrega == (int)TipoEntregaEnum.Delivery &&
+                (entrega == null || entrega.IdEstadoEntrega != (int)EstadoEntregaEnum.Entregado))
+                throw new Exception("El delivery debe estar marcado como Entregado antes de cerrar el pedido.");
+
+            var estadoAnterior = venta.IdEstadoVenta;
+            venta.IdEstadoVenta = (int)EstadoVentaEnum.Entregado;
+            venta.FechaModificacion = Fecha.Hoy;
+            venta.UsuarioModificacion = usuario;
+            _unitOfWork.VentaRepository.Update(venta);
+
+            var comprobante = _unitOfWork.ComprobanteVentaRepository.GetBy(x => x.IdVenta == idVenta).FirstOrDefault();
+            if (comprobante == null)
+            {
+                var ultimoNumero = _unitOfWork.ComprobanteVentaRepository.GetAll()
+                    .Where(x => x.Activo && x.Serie == "B001")
+                    .Select(x => x.Numero)
+                    .AsEnumerable()
+                    .Select(x => int.TryParse(x, out var numero) ? numero : 0)
+                    .DefaultIfEmpty(0)
+                    .Max();
+
+                _unitOfWork.ComprobanteVentaRepository.Add(new TComprobanteVenta
+                {
+                    IdVenta = idVenta,
+                    IdTipoComprobante = 1,
+                    Serie = "B001",
+                    Numero = (ultimoNumero + 1).ToString("D8"),
+                    FechaEmision = Fecha.Hoy,
+                    Activo = true,
+                    UsuarioCreacion = usuario,
+                    FechaCreacion = Fecha.Hoy
+                });
+            }
+
+_unitOfWork.Commit();
+            _unitOfWork.VentaRepository.AgregarHistorial(new VentaHistorialDTO
+            {
+                IdVenta = idVenta,
+                IdEstadoAnterior = estadoAnterior,
+                IdEstadoNuevo = (int)EstadoVentaEnum.Entregado,
+                Accion = "Entregado",
+                Observacion = "Pedido entregado y comprobante generado",
+                Usuario = usuario
+            });
+            _unitOfWork.Commit();
+        }
+
+        public ComprobanteVenta EmitirComprobante(int idVenta, int idTipoComprobante, string usuario)
+        {
+            var venta = _unitOfWork.VentaRepository.GetById(idVenta);
+            if (venta == null)
+                throw new Exception("Venta no encontrada.");
+            if (venta.IdEstadoVenta == (int)EstadoVentaEnum.Cancelada)
+                throw new Exception("No se puede emitir comprobante para una venta cancelada.");
+            if (venta.IdEstadoVenta == (int)EstadoVentaEnum.Rechazada)
+                throw new Exception("No se puede emitir comprobante para una venta rechazada.");
+
+            var comprobanteExistente = _unitOfWork.ComprobanteVentaRepository.GetBy(x => x.IdVenta == idVenta).FirstOrDefault();
+            if (comprobanteExistente != null)
+            {
+                return new ComprobanteVenta
+                {
+                    Id = comprobanteExistente.Id,
+                    IdVenta = comprobanteExistente.IdVenta,
+                    IdTipoComprobante = comprobanteExistente.IdTipoComprobante,
+                    Serie = comprobanteExistente.Serie,
+                    Numero = comprobanteExistente.Numero,
+                    FechaEmision = comprobanteExistente.FechaEmision,
+                    Activo = comprobanteExistente.Activo,
+                    UsuarioCreacion = comprobanteExistente.UsuarioCreacion,
+                    FechaCreacion = comprobanteExistente.FechaCreacion
+                };
+            }
+
+            var serie = idTipoComprobante == 2 ? "F001" : "B001";
+            var ultimoNumero = _unitOfWork.ComprobanteVentaRepository.GetAll()
+                .Where(x => x.Activo && x.Serie == serie)
+                .Select(x => x.Numero)
+                .AsEnumerable()
+                .Select(x => int.TryParse(x, out var numero) ? numero : 0)
+                .DefaultIfEmpty(0)
+                .Max();
+
+            var comprobante = new TComprobanteVenta
+            {
+                IdVenta = idVenta,
+                IdTipoComprobante = idTipoComprobante,
+                Serie = serie,
+                Numero = (ultimoNumero + 1).ToString("D8"),
+                FechaEmision = Fecha.Hoy,
+                Activo = true,
+                UsuarioCreacion = usuario,
+                FechaCreacion = Fecha.Hoy
+            };
+
+            _unitOfWork.ComprobanteVentaRepository.Add(comprobante);
+            _unitOfWork.Commit();
+
+            _unitOfWork.VentaRepository.AgregarHistorial(new VentaHistorialDTO
+            {
+                IdVenta = idVenta,
+                IdEstadoAnterior = venta.IdEstadoVenta,
+                IdEstadoNuevo = venta.IdEstadoVenta,
+                Accion = "ComprobanteEmitido",
+                Observacion = $"Comprobante {serie}-{comprobante.Numero} emitido",
+                Usuario = usuario
+            });
+            _unitOfWork.Commit();
+
+            return new ComprobanteVenta
+            {
+                Id = comprobante.Id,
+                IdVenta = comprobante.IdVenta,
+                IdTipoComprobante = comprobante.IdTipoComprobante,
+                Serie = comprobante.Serie,
+                Numero = comprobante.Numero,
+                FechaEmision = comprobante.FechaEmision,
+                Activo = comprobante.Activo,
+                UsuarioCreacion = comprobante.UsuarioCreacion,
+                FechaCreacion = comprobante.FechaCreacion
             };
         }
 
-        public IEnumerable<object> ObtenerListadoDeliveries()
+        public DeliveryPaginacionDTO ObtenerListadoDeliveries(int pagina = 1, int tamanioPagina = 6, int idEstadoEntrega = 0)
         {
+            pagina = Math.Max(1, pagina);
+            tamanioPagina = Math.Clamp(tamanioPagina, 1, 24);
+
             var deliveries = _unitOfWork.EntregaDeliveryRepository.GetAll()
                 .Where(x => x.Activo)
                 .ToList();
 
+            var ventasDelivery = deliveries
+                .Select(d => new { Delivery = d, Venta = _unitOfWork.VentaRepository.GetById(d.IdVenta) })
+                .Where(x => x.Venta != null && x.Venta.Activo &&
+                    x.Venta.IdEstadoVenta != (int)EstadoVentaEnum.Rechazada &&
+                    x.Venta.IdEstadoVenta != (int)EstadoVentaEnum.Cancelada &&
+                    (idEstadoEntrega <= 0 || x.Delivery.IdEstadoEntrega == idEstadoEntrega))
+                .OrderByDescending(x => x.Venta.FechaVenta)
+                .ThenByDescending(x => x.Venta.Id)
+                .ToList();
+
             var result = new List<object>();
-            foreach (var d in deliveries)
+            foreach (var item in ventasDelivery)
             {
-                var venta = _unitOfWork.VentaRepository.GetById(d.IdVenta);
-                
-                if (venta.IdEstadoVenta != (int)EstadoVentaEnum.Pagada && 
-                    venta.IdEstadoVenta != (int)EstadoVentaEnum.Aprobada)
-                {
-                    continue;
-                }
+                var d = item.Delivery;
+                var venta = item.Venta!;
 
                 var persona = _unitOfWork.PersonaRepository.GetById(venta.IdPersona);
                 var estado = ObtenerEstadoEntrega(d.IdEstadoEntrega);
@@ -643,15 +1046,44 @@ namespace H.Services
                     d.Referencia,
                     d.TelefonoContacto,
                     d.NombreContacto,
-                    d.CostoDelivery,
+                     d.CostoDelivery,
+                     venta.SubTotal,
+                     venta.Total,
+                     venta.MontoPagado,
+                     venta.SaldoPendiente,
+                     venta.RequiereAnticipo,
+                     idEstadoVenta = venta.IdEstadoVenta,
+                     estadoVenta = _unitOfWork.EstadoVentaRepository.GetById(venta.IdEstadoVenta)?.Nombre ?? "Desconocido",
+                     productos = ObtenerProductosDelivery(venta.Id),
                     d.IdEstadoEntrega,
                     estado = estado != null ? estado.Nombre : "Desconocido",
                     d.FechaAsignacion,
+                    d.FechaAceptacion,
+                    d.FechaInicio,
                     d.FechaEntrega,
-                    d.IdPersonalRepartidor
-                });
+                    d.IdPersonalRepartidor,
+                    repartidorNombre = d.IdPersonalRepartidor.HasValue
+                        ? ObtenerNombrePersona(d.IdPersonalRepartidor.Value)
+                        : null,
+                    d.Latitud,
+                    d.Longitud,
+                    d.UsuarioAsignacion,
+                    fechaUltimaActualizacion = d.FechaModificacion ?? d.FechaCreacion
+                 });
             }
-            return result;
+
+            var totalRegistros = result.Count;
+            var totalPaginas = Math.Max(1, (int)Math.Ceiling(totalRegistros / (double)tamanioPagina));
+            pagina = Math.Min(pagina, totalPaginas);
+
+            return new DeliveryPaginacionDTO
+            {
+                Items = result.Skip((pagina - 1) * tamanioPagina).Take(tamanioPagina).ToList(),
+                TotalRegistros = totalRegistros,
+                TotalPaginas = totalPaginas,
+                PaginaActual = pagina,
+                TamanioPagina = tamanioPagina
+            };
         }
 
         public void ActualizarEstadoDelivery(int idDelivery, int idEstadoEntrega, string usuario)
@@ -660,6 +1092,20 @@ namespace H.Services
             if (delivery == null)
                 throw new Exception("Delivery no encontrado.");
 
+            if (idEstadoEntrega == (int)EstadoEntregaEnum.Entregado)
+            {
+                CompletarEntrega(idDelivery, usuario);
+                return;
+            }
+
+            var transicionValida =
+                (delivery.IdEstadoEntrega == (int)EstadoEntregaEnum.Pendiente && idEstadoEntrega == (int)EstadoEntregaEnum.Asignado) ||
+                (delivery.IdEstadoEntrega == (int)EstadoEntregaEnum.Asignado && idEstadoEntrega == (int)EstadoEntregaEnum.Aceptado) ||
+                (delivery.IdEstadoEntrega == (int)EstadoEntregaEnum.Aceptado && idEstadoEntrega == (int)EstadoEntregaEnum.EnCamino);
+
+            if (!transicionValida)
+                throw new Exception("La transición de delivery no es válida.");
+
             delivery.IdEstadoEntrega = idEstadoEntrega;
             delivery.FechaModificacion = Fecha.Hoy;
             delivery.UsuarioModificacion = usuario;
@@ -667,6 +1113,10 @@ namespace H.Services
             if (idEstadoEntrega == (int)EstadoEntregaEnum.Entregado)
             {
                 delivery.FechaEntrega = Fecha.Hoy;
+            }
+            else if (idEstadoEntrega == (int)EstadoEntregaEnum.EnCamino)
+            {
+                delivery.FechaInicio = Fecha.Hoy;
             }
 
             _unitOfWork.EntregaDeliveryRepository.Update(delivery);
@@ -693,6 +1143,7 @@ namespace H.Services
             delivery.IdEstadoEntrega = (int)EstadoEntregaEnum.Asignado;
             delivery.IdPersonalRepartidor = idPersonalRepartidor;
             delivery.FechaAsignacion = Fecha.Hoy;
+            delivery.UsuarioAsignacion = usuario;
             delivery.FechaModificacion = Fecha.Hoy;
             delivery.UsuarioModificacion = usuario;
 
@@ -718,12 +1169,35 @@ namespace H.Services
 
         public IEnumerable<MisPedidosDTO> ObtenerMisPedidos(int idPersona)
         {
+            return MapearMisPedidos(_unitOfWork.VentaRepository.GetBy(x => x.IdPersona == idPersona && x.Activo)
+                .OrderByDescending(x => x.FechaCreacion));
+        }
+
+        public MisPedidosPaginacionDTO ObtenerMisPedidosPaginado(int idPersona, int pagina = 1, int tamanioPagina = 6)
+        {
+            pagina = Math.Max(1, pagina);
+            tamanioPagina = Math.Clamp(tamanioPagina, 1, 24);
+
             var ventas = _unitOfWork.VentaRepository.GetBy(x => x.IdPersona == idPersona && x.Activo)
                 .OrderByDescending(x => x.FechaCreacion)
                 .ToList();
+            var totalRegistros = ventas.Count;
+            var totalPaginas = Math.Max(1, (int)Math.Ceiling(totalRegistros / (double)tamanioPagina));
+            pagina = Math.Min(pagina, totalPaginas);
 
+            return new MisPedidosPaginacionDTO
+            {
+                Items = MapearMisPedidos(ventas.Skip((pagina - 1) * tamanioPagina).Take(tamanioPagina)),
+                TotalRegistros = totalRegistros,
+                TotalPaginas = totalPaginas,
+                PaginaActual = pagina,
+                TamanioPagina = tamanioPagina
+            };
+        }
+
+        private List<MisPedidosDTO> MapearMisPedidos(IEnumerable<TVenta> ventas)
+        {
             var result = new List<MisPedidosDTO>();
-
             foreach (var venta in ventas)
             {
                 var detalles = _unitOfWork.VentaDetalleRepository.GetBy(x => x.IdVenta == venta.Id).ToList();
@@ -738,12 +1212,17 @@ namespace H.Services
                 var estadoPago = _unitOfWork.EstadoVentaRepository.GetById(venta.IdEstadoVenta);
 
                 var deliveryEstado = entrega != null ? ObtenerEstadoEntrega(entrega.IdEstadoEntrega)?.Nombre ?? "Sin delivery" : null;
+                var comprobante = _unitOfWork.ComprobanteVentaRepository
+                    .GetBy(x => x.IdVenta == venta.Id).FirstOrDefault();
 
                 result.Add(new MisPedidosDTO
                 {
                     Id = venta.Id,
                     Fecha = venta.FechaCreacion,
                     Total = venta.Total ?? 0,
+                    MontoPagado = venta.MontoPagado,
+                    SaldoPendiente = venta.SaldoPendiente,
+                    RequiereAnticipo = venta.RequiereAnticipo,
                     EstadoPago = estadoPago?.Nombre ?? "Desconocido",
                     IdEstadoVenta = venta.IdEstadoVenta,
                     IdEstadoEntrega = entrega?.IdEstadoEntrega,
@@ -756,7 +1235,9 @@ namespace H.Services
                     MetodoPago = string.Join(", ", pagos.Select(p => {
                         var metodo = _unitOfWork.MetodoPagoRepository.GetById(p.IdMetodoPago);
                         return metodo?.Nombre ?? "N/A";
-                    }))
+                    })),
+                    TipoComprobante = comprobante?.IdTipoComprobante == 2 ? "Factura" : comprobante == null ? null : "Boleta",
+                    SerieNumeroComprobante = comprobante == null ? null : $"{comprobante.Serie}-{comprobante.Numero}"
                 });
             }
 
@@ -771,13 +1252,13 @@ namespace H.Services
                 if (entrega == null)
                     throw new Exception("Delivery no encontrado.");
 
-                if (entrega.IdEstadoEntrega == 3)
+                if (entrega.IdEstadoEntrega == (int)EstadoEntregaEnum.Entregado)
                     throw new Exception("No se puede cancelar un pedido ya entregado.");
-                
-                if (entrega.IdEstadoEntrega == 4)
+
+                if (entrega.IdEstadoEntrega == (int)EstadoEntregaEnum.Cancelado)
                     throw new Exception("El pedido ya está cancelado.");
 
-                entrega.IdEstadoEntrega = 4;
+                entrega.IdEstadoEntrega = (int)EstadoEntregaEnum.Cancelado;
                 entrega.FechaModificacion = Fecha.Hoy;
                 entrega.UsuarioModificacion = usuario;
 
@@ -844,6 +1325,9 @@ namespace H.Services
                         ImagenComprobante = v.ImagenComprobante ?? "",
                         Estado = "Esperando Validación",
                         IdEstadoVenta = v.IdEstadoVenta,
+                        MontoPagado = v.MontoPagado,
+                        SaldoPendiente = v.SaldoPendiente,
+                        RequiereAnticipo = v.RequiereAnticipo,
                         Detalles = detallesDto
                     });
                 }
@@ -874,7 +1358,10 @@ namespace H.Services
                     throw new Exception("La venta no está en estado de validación.");
 
                 var estadoAnterior = venta.IdEstadoVenta;
-                venta.IdEstadoVenta = (int)EstadoVentaEnum.Pagada;
+                var estadoAprobado = venta.MontoPagado >= (venta.Total ?? 0)
+                    ? EstadoVentaEnum.Pagada
+                    : EstadoVentaEnum.Aprobada;
+                venta.IdEstadoVenta = (int)estadoAprobado;
                 venta.FechaModificacion = Fecha.Hoy;
                 venta.UsuarioModificacion = usuario;
 
@@ -906,9 +1393,11 @@ namespace H.Services
                 {
                     IdVenta = idVenta,
                     IdEstadoAnterior = estadoAnterior,
-                    IdEstadoNuevo = (int)EstadoVentaEnum.Pagada,
+                    IdEstadoNuevo = (int)estadoAprobado,
                     Accion = "Aprobada",
-                    Observacion = "Pago validado y stock actualizado",
+                    Observacion = estadoAprobado == EstadoVentaEnum.Pagada
+                        ? "Pago validado y pedido pagado completamente"
+                        : "Comprobante validado; queda saldo pendiente para completar la entrega",
                     Usuario = usuario
                 });
                 _unitOfWork.Commit();
@@ -943,6 +1432,25 @@ namespace H.Services
                 venta.UsuarioModificacion = usuario;
 
                 _unitOfWork.VentaRepository.Update(venta);
+                _unitOfWork.Commit();
+
+                var detalles = _unitOfWork.VentaDetalleRepository.GetAll()
+                    .Where(d => d.IdVenta == idVenta && d.Activo)
+                    .ToList();
+                foreach (var detalle in detalles)
+                {
+                    LiberarStock(detalle.IdTorta, (int)detalle.Cantidad);
+                    _unitOfWork.MovimientoTortaRepository.Add(new TMovimientoTorta
+                    {
+                        IdTorta = detalle.IdTorta,
+                        IdTipoMovimiento = (int)TipoMovimientoEnum.Anulacion,
+                        Cantidad = detalle.Cantidad,
+                        FechaMovimiento = Fecha.Hoy,
+                        Referencia = $"Rechazo Venta #{idVenta}",
+                        UsuarioCreacion = usuario,
+                        Activo = true
+                    });
+                }
                 _unitOfWork.Commit();
 
                 _unitOfWork.VentaRepository.AgregarHistorial(new VentaHistorialDTO
@@ -997,10 +1505,22 @@ namespace H.Services
                         d.TelefonoContacto,
                         d.NombreContacto,
                         d.CostoDelivery,
+                        venta.SubTotal,
+                        venta.Total,
+                        venta.MontoPagado,
+                        saldoPorCobrar = venta.SaldoPendiente,
+                        venta.SaldoPendiente,
+                        productos = ObtenerProductosDelivery(venta.Id),
                         d.IdEstadoEntrega,
                         estado = estado != null ? estado.Nombre : "Desconocido",
                         d.FechaAsignacion,
+                        d.FechaAceptacion,
+                        d.FechaInicio,
                         d.FechaEntrega,
+                        d.Latitud,
+                        d.Longitud,
+                        d.UsuarioAsignacion,
+                        fechaUltimaActualizacion = d.FechaModificacion ?? d.FechaCreacion,
                         puedeAceptar = d.IdEstadoEntrega == (int)EstadoEntregaEnum.Asignado,
                         puedeIniciar = d.IdEstadoEntrega == (int)EstadoEntregaEnum.Aceptado,
                         puedeCompletar = d.IdEstadoEntrega == (int)EstadoEntregaEnum.EnCamino
@@ -1031,6 +1551,7 @@ namespace H.Services
                     throw new Exception("El pedido debe estar en estado 'Asignado' para poder aceptarlo.");
 
                 delivery.IdEstadoEntrega = (int)EstadoEntregaEnum.Aceptado;
+                delivery.FechaAceptacion = Fecha.Hoy;
                 delivery.FechaModificacion = Fecha.Hoy;
                 delivery.UsuarioModificacion = usuario;
 
@@ -1060,6 +1581,7 @@ namespace H.Services
                     throw new Exception("El pedido debe estar aceptado para iniciar el delivery.");
 
                 delivery.IdEstadoEntrega = (int)EstadoEntregaEnum.EnCamino;
+                delivery.FechaInicio = Fecha.Hoy;
                 delivery.FechaModificacion = Fecha.Hoy;
                 delivery.UsuarioModificacion = usuario;
 
@@ -1085,16 +1607,22 @@ namespace H.Services
                 if (delivery == null)
                     throw new Exception("Delivery no encontrado.");
 
+                if (delivery.IdEstadoEntrega == (int)EstadoEntregaEnum.Entregado)
+                    return;
+
+                var venta = _unitOfWork.VentaRepository.GetById(delivery.IdVenta);
+                if (venta == null)
+                    throw new Exception("Venta asociada no encontrada.");
                 if (delivery.IdEstadoEntrega != (int)EstadoEntregaEnum.EnCamino)
                     throw new Exception("El pedido debe estar en camino para completarlo.");
 
-                delivery.IdEstadoEntrega = (int)EstadoEntregaEnum.Entregado;
-                delivery.FechaEntrega = Fecha.Hoy;
-                delivery.FechaModificacion = Fecha.Hoy;
-                delivery.UsuarioModificacion = usuario;
+                var saldo = Math.Max(0, (venta.SaldoPendiente > 0
+                    ? venta.SaldoPendiente
+                    : (venta.Total ?? 0) - venta.MontoPagado));
+                if (saldo > 0)
+                    throw new Exception("Este pedido requiere registrar primero el cobro del saldo pendiente.");
 
-                _unitOfWork.EntregaDeliveryRepository.Update(delivery);
-                _unitOfWork.Commit();
+                FinalizarEntrega(delivery, venta, usuario);
             }
             catch (Exception ex)
             {
@@ -1105,6 +1633,109 @@ namespace H.Services
                 LogErp.EscribirBaseDatos(error);
                 throw;
             }
+        }
+
+        public void CompletarEntrega(int idDelivery, string usuario, decimal? montoCobrado, int idMetodoPago)
+        {
+            var delivery = _unitOfWork.EntregaDeliveryRepository.GetById(idDelivery);
+            if (delivery == null)
+                throw new Exception("Delivery no encontrado.");
+            if (delivery.IdEstadoEntrega == (int)EstadoEntregaEnum.Entregado)
+                return;
+
+            var venta = _unitOfWork.VentaRepository.GetById(delivery.IdVenta)
+                ?? throw new Exception("Venta asociada no encontrada.");
+            var saldo = Math.Max(0, venta.SaldoPendiente > 0
+                ? venta.SaldoPendiente
+                : (venta.Total ?? 0) - venta.MontoPagado);
+            var cobro = decimal.Round(Math.Max(0, montoCobrado ?? 0), 2);
+            if (cobro + 0.01m < saldo)
+                throw new Exception($"Debe cobrar el saldo pendiente completo: S/ {saldo:0.00}.");
+            if (cobro > saldo + 0.01m)
+                throw new Exception($"El monto cobrado no puede superar el saldo pendiente: S/ {saldo:0.00}.");
+            if (cobro > 0)
+            {
+                var metodo = _unitOfWork.MetodoPagoRepository.GetById(idMetodoPago);
+                if (metodo == null)
+                    throw new Exception("El método de pago del cobro no es válido.");
+                _unitOfWork.PagoVentaRepository.Add(new PagoVenta
+                {
+                    IdVenta = venta.Id,
+                    IdMetodoPago = idMetodoPago,
+                    Monto = cobro,
+                    FechaPago = Fecha.Hoy,
+                    UsuarioCreacion = usuario,
+                    FechaCreacion = Fecha.Hoy,
+                    Activo = true
+                });
+                venta.MontoPagado = decimal.Round(venta.MontoPagado + cobro, 2);
+                venta.SaldoPendiente = decimal.Round(Math.Max(0, (venta.Total ?? 0) - venta.MontoPagado), 2);
+            }
+            if (venta.SaldoPendiente > 0)
+                throw new Exception("Este pedido requiere registrar primero el cobro del saldo pendiente.");
+
+            if (delivery.IdEstadoEntrega != (int)EstadoEntregaEnum.EnCamino)
+                throw new Exception("El pedido debe estar en camino para completarlo.");
+
+            // Finaliza usando las mismas instancias que se usaron para registrar el cobro.
+            // Volver a consultar/adjuntar la venta en este DbContext causa tracking duplicado.
+            FinalizarEntrega(delivery, venta, usuario);
+        }
+
+        private void FinalizarEntrega(EntregaDelivery delivery, Venta venta, string usuario)
+        {
+            if (delivery.IdEstadoEntrega == (int)EstadoEntregaEnum.Entregado)
+                return;
+
+            var estadoAnterior = venta.IdEstadoVenta;
+            venta.IdEstadoVenta = (int)EstadoVentaEnum.Entregado;
+            venta.FechaModificacion = Fecha.Hoy;
+            venta.UsuarioModificacion = usuario;
+
+            delivery.IdEstadoEntrega = (int)EstadoEntregaEnum.Entregado;
+            delivery.FechaEntrega = Fecha.Hoy;
+            delivery.FechaModificacion = Fecha.Hoy;
+            delivery.UsuarioModificacion = usuario;
+
+            _unitOfWork.VentaRepository.Update(venta);
+            _unitOfWork.EntregaDeliveryRepository.Update(delivery);
+
+            var comprobante = _unitOfWork.ComprobanteVentaRepository
+                .GetBy(x => x.IdVenta == venta.Id).FirstOrDefault();
+            if (comprobante == null)
+            {
+                var ultimoNumero = _unitOfWork.ComprobanteVentaRepository.GetAll()
+                    .Where(x => x.Activo && x.Serie == "B001")
+                    .Select(x => x.Numero)
+                    .AsEnumerable()
+                    .Select(x => int.TryParse(x, out var numero) ? numero : 0)
+                    .DefaultIfEmpty(0)
+                    .Max();
+
+                _unitOfWork.ComprobanteVentaRepository.Add(new TComprobanteVenta
+                {
+                    IdVenta = venta.Id,
+                    IdTipoComprobante = 1,
+                    Serie = "B001",
+                    Numero = (ultimoNumero + 1).ToString("D8"),
+                    FechaEmision = Fecha.Hoy,
+                    Activo = true,
+                    UsuarioCreacion = usuario,
+                    FechaCreacion = Fecha.Hoy
+                });
+            }
+
+            _unitOfWork.Commit();
+            _unitOfWork.VentaRepository.AgregarHistorial(new VentaHistorialDTO
+            {
+                IdVenta = venta.Id,
+                IdEstadoAnterior = estadoAnterior,
+                IdEstadoNuevo = (int)EstadoVentaEnum.Entregado,
+                Accion = "Entregado",
+                Observacion = "Pedido entregado y comprobante generado",
+                Usuario = usuario
+            });
+            _unitOfWork.Commit();
         }
 
         public void DesasignarPedido(int idDelivery, string usuario)
@@ -1165,12 +1796,21 @@ namespace H.Services
                         cliente = persona.ApellidoPaterno + " " + persona.Nombres,
                         clienteTelefono = persona.Telefono,
                         d.Direccion,
+                        d.CostoDelivery,
+                        venta.Total,
+                        venta.SaldoPendiente,
+                        productos = ObtenerProductosDelivery(venta.Id),
                         repartidorId = d.IdPersonalRepartidor,
                         repartidorNombre = repartidor != null ? repartidor.ApellidoPaterno + " " + repartidor.Nombres : "Sin asignar",
                         d.IdEstadoEntrega,
                         estado = estado != null ? estado.Nombre : "Desconocido",
                         d.FechaAsignacion,
+                        d.FechaAceptacion,
+                        d.FechaInicio,
                         d.FechaEntrega,
+                        d.Latitud,
+                        d.Longitud,
+                        d.UsuarioAsignacion,
                         tiempoEntregaMinutos = tiempoEntrega.HasValue ? (int)tiempoEntrega.Value.TotalMinutes : (int?)null,
                         puedeDesasignar = d.IdEstadoEntrega != (int)EstadoEntregaEnum.Entregado && 
                                          d.IdEstadoEntrega != (int)EstadoEntregaEnum.Cancelado
@@ -1187,6 +1827,115 @@ namespace H.Services
                 LogErp.EscribirBaseDatos(error);
                 return new List<object>();
             }
+        }
+
+        public object ObtenerHistorialRepartidor(int idPersona, int pagina = 1, int tamanioPagina = 8)
+        {
+            pagina = Math.Max(1, pagina);
+            tamanioPagina = Math.Clamp(tamanioPagina, 1, 50);
+            var deliveries = _unitOfWork.EntregaDeliveryRepository.GetAll()
+                .Where(x => x.IdPersonalRepartidor == idPersona && x.Activo)
+                .OrderByDescending(x => x.FechaEntrega ?? x.FechaAsignacion ?? x.FechaCreacion)
+                .ToList();
+            var total = deliveries.Count;
+            var totalPaginas = Math.Max(1, (int)Math.Ceiling(total / (double)tamanioPagina));
+            pagina = Math.Min(pagina, totalPaginas);
+            return new
+            {
+                items = deliveries.Skip((pagina - 1) * tamanioPagina).Take(tamanioPagina)
+                    .Select(d => MapearDeliveryRepartidor(d)).ToList(),
+                totalRegistros = total,
+                totalPaginas,
+                paginaActual = pagina,
+                tamanioPagina
+            };
+        }
+
+        public object ObtenerGananciasRepartidor(int idPersona)
+        {
+            var entregas = _unitOfWork.EntregaDeliveryRepository.GetAll()
+                .Where(x => x.IdPersonalRepartidor == idPersona && x.Activo &&
+                            x.IdEstadoEntrega == (int)EstadoEntregaEnum.Entregado)
+                .ToList();
+            var hoy = Fecha.Hoy.Date;
+            var inicioSemana = hoy.AddDays(-(int)hoy.DayOfWeek + 1);
+            var inicioMes = new DateTime(hoy.Year, hoy.Month, 1);
+            decimal Sumar(Func<TEntregaDelivery, bool> filtro) => entregas.Where(filtro).Sum(x => x.CostoDelivery ?? 0);
+            return new
+            {
+                total = Sumar(_ => true),
+                hoy = Sumar(x => x.FechaEntrega?.Date == hoy),
+                semana = Sumar(x => x.FechaEntrega?.Date >= inicioSemana),
+                mes = Sumar(x => x.FechaEntrega?.Date >= inicioMes),
+                entregasCompletadas = entregas.Count,
+                promedio = entregas.Count == 0 ? 0 : Math.Round(Sumar(_ => true) / entregas.Count, 2)
+            };
+        }
+
+        private string ObtenerNombrePersona(int idPersona)
+        {
+            var persona = _unitOfWork.PersonaRepository.GetById(idPersona);
+            return persona == null ? "Sin asignar" : $"{persona.ApellidoPaterno} {persona.Nombres}".Trim();
+        }
+
+        private List<object> ObtenerProductosDelivery(int idVenta)
+        {
+            return _unitOfWork.VentaDetalleRepository.GetBy(x => x.IdVenta == idVenta && x.Activo)
+                .Select(d => (object)new
+                {
+                    idTorta = d.IdTorta,
+                    producto = _unitOfWork.TortaRepository.GetById(d.IdTorta)?.Nombre ?? "Producto",
+                    cantidad = d.Cantidad,
+                    precioUnitario = d.PrecioFinal ?? ((d.PrecioBase ?? 0) + (d.PrecioPersonalizacion ?? 0)),
+                    subtotal = d.SubTotal ?? 0,
+                    tamanio = d.TamanoPersonalizado,
+                    sabor = d.SaborPersonalizado,
+                    relleno = d.RellenoPersonalizado,
+                    pisos = d.PisosPersonalizados,
+                    colorDecoracion = d.ColorDecoracionPersonalizada,
+                    decoracion = d.DecoracionPersonalizada,
+                    cobertura = d.CoberturaPersonalizada,
+                    porciones = d.PorcionesPersonalizadas,
+                    evento = d.EventoPersonalizado,
+                    fechaEntrega = d.FechaEntregaSolicitada,
+                    observaciones = d.ObservacionesPersonalizacion,
+                    imagenReferencia = d.ImagenReferencia,
+                    mensaje = d.MensajePersonalizado
+                }).ToList();
+        }
+
+        private object MapearDeliveryRepartidor(TEntregaDelivery d)
+        {
+            var venta = _unitOfWork.VentaRepository.GetById(d.IdVenta)!;
+            var cliente = _unitOfWork.PersonaRepository.GetById(venta.IdPersona);
+            return new
+            {
+                d.Id,
+                d.IdVenta,
+                venta.FechaVenta,
+                cliente = cliente == null ? "Cliente" : $"{cliente.ApellidoPaterno} {cliente.Nombres}".Trim(),
+                clienteTelefono = cliente?.Telefono,
+                d.Direccion,
+                d.Referencia,
+                d.TelefonoContacto,
+                d.NombreContacto,
+                d.CostoDelivery,
+                venta.SubTotal,
+                venta.Total,
+                venta.MontoPagado,
+                venta.SaldoPendiente,
+                productos = ObtenerProductosDelivery(venta.Id),
+                d.IdEstadoEntrega,
+                estado = ObtenerEstadoEntrega(d.IdEstadoEntrega)?.Nombre ?? "Desconocido",
+                d.FechaAsignacion,
+                d.FechaAceptacion,
+                d.FechaInicio,
+                d.FechaEntrega,
+                d.Latitud,
+                d.Longitud,
+                d.UsuarioAsignacion,
+                fechaUltimaActualizacion = d.FechaModificacion ?? d.FechaCreacion
+            };
         }
     }
 }

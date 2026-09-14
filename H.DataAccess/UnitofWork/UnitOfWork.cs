@@ -64,6 +64,15 @@ namespace H.DataAccess.UnitofWork
         private IEntradaInsumoRepository _EntradaInsumoRepository;
         private IEntradaInsumoDetalleRepository _EntradaInsumoDetalleRepository;
         private IMetaVentaRepository _MetaVentaRepository;
+        private ITortaOpcionRepository _TortaOpcionRepository;
+
+        ITortaOpcionRepository IUnitOfWork.TortaOpcionRepository
+        {
+            get
+            {
+                return _TortaOpcionRepository ?? new TortaOpcionRepository(_context, _connectionFactory);
+            }
+        }
 
         IProductoRepository IUnitOfWork.ProductoRepository
         {

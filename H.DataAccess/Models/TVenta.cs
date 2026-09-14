@@ -41,6 +41,9 @@ namespace H.DataAccess.Models
         /// Nombre del rol.
         /// </summary>
         public decimal? Total { get; set; }
+        public decimal MontoPagado { get; set; }
+        public decimal SaldoPendiente { get; set; }
+        public bool RequiereAnticipo { get; set; }
         /// <summary>
         /// Nombre del rol.
         /// </summary>

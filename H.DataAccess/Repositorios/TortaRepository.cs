@@ -8,6 +8,7 @@ using H.DataAccess.Entidades;
 using H.DataAccess.Models;
 using H.DataAccess.Enums;
 using H.DataAccess.Infraestructure;
+using Microsoft.EntityFrameworkCore;
 using H.DataAccess.Log;
 using H.DataAccess.Repositorios;
 using Newtonsoft.Json;
@@ -52,14 +53,38 @@ namespace H.DataAccess.Repositorios
         {
             try
             {
-                var modelo = mapper.Map<TTorta>(entidad);
-                base.Update(modelo);
-                return modelo;
+                var previousBehavior = context.ChangeTracker.QueryTrackingBehavior;
+                context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.TrackAll;
+                try
+                {
+                    var tracked = context.TTorta.FirstOrDefault(e => e.Id == entidad.Id);
+                    if (tracked == null)
+                        throw new Exception($"Torta con Id {entidad.Id} no encontrada.");
+
+                    tracked.Nombre = entidad.Nombre;
+                    tracked.IdCategoriaTorta = entidad.IdCategoriaTorta;
+                    tracked.Descripcion = entidad.Descripcion;
+                    tracked.Cantidades = entidad.Cantidades;
+                    tracked.StockDisponible = entidad.StockDisponible;
+                    tracked.PrecioVenta = entidad.PrecioVenta;
+                    tracked.EsPersonalizable = entidad.EsPersonalizable;
+                    tracked.ImagenUrl = entidad.ImagenUrl;
+                    tracked.ImagenPublicId = entidad.ImagenPublicId;
+                    tracked.Activo = entidad.Activo;
+                    tracked.UsuarioModificacion = entidad.UsuarioModificacion;
+                    tracked.FechaModificacion = entidad.FechaModificacion ?? DateTime.Now;
+
+                    return tracked;
+                }
+                finally
+                {
+                    context.ChangeTracker.QueryTrackingBehavior = previousBehavior;
+                }
             }
             catch (Exception ex)
             {
                 var error = new Error();
-                error.Message = "CtegoriaRepository" + ex.Message;
+                error.Message = "TortaRepository" + ex.Message;
                 error.Exception = ex;
                 error.Operation = "Update";
                 error.Code = TiposError.NoActualizado;

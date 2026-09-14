@@ -19,5 +19,8 @@ namespace H.DataAccess.Entidades
         public string? ImagenComprobante { get; set; }
         public string? NumeroOperacion { get; set; }
         public string? MotivoRechazo { get; set; }
+        public decimal MontoPagado { get; set; }
+        public decimal SaldoPendiente { get; set; }
+        public bool RequiereAnticipo { get; set; }
     }
 }
