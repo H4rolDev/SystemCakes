@@ -24,6 +24,7 @@ namespace H.DTOs
         public List<ChatCartItemDTO> AddedItems { get; set; } = new();
         public List<ChatActionDTO> Actions { get; set; } = new();
         public List<ChatOrderStateDTO> OrderStates { get; set; } = new();
+        public bool HasCustomRequestOption { get; set; }
     }
 
     public class ChatProductDTO

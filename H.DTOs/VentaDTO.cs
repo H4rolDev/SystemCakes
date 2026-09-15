@@ -169,6 +169,7 @@ public class EmitirComprobanteDTO
         public string Productos { get; set; } = string.Empty;
         public int Cantidad { get; set; }
         public string TipoEntrega { get; set; } = string.Empty;
+        public string? CodigoEntrega { get; set; }
         public int IdEstadoVenta { get; set; }
         public int? IdEstadoEntrega { get; set; }
         public string? DeliveryEstado { get; set; }
@@ -230,6 +231,16 @@ public class EmitirComprobanteDTO
         public int IdVenta { get; set; }
         public string Usuario { get; set; } = null!;
         public string? MotivoRechazo { get; set; }
+    }
+
+    public class CompletarRecojoDTO
+    {
+        public int IdVenta { get; set; }
+        public string CodigoEntrega { get; set; } = string.Empty;
+        public string DocumentoCliente { get; set; } = string.Empty;
+        public decimal MontoCobrado { get; set; }
+        public int IdMetodoPago { get; set; } = 1;
+        public string Usuario { get; set; } = string.Empty;
     }
 
     public class SubirImagenDTO

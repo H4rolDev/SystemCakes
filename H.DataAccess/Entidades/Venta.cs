@@ -22,5 +22,6 @@ namespace H.DataAccess.Entidades
         public decimal MontoPagado { get; set; }
         public decimal SaldoPendiente { get; set; }
         public bool RequiereAnticipo { get; set; }
+        public string? CodigoEntrega { get; set; }
     }
 }

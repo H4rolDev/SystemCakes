@@ -44,8 +44,32 @@ public class TortaOpcionRepository : GenericRepository<TTortaOpcion>, ITortaOpci
 
     public TTortaOpcion Update(TortaOpcion entidad)
     {
-        var modelo = _mapper.Map<TTortaOpcion>(entidad);
-        base.Update(modelo);
-        return modelo;
+        var previousBehavior = context.ChangeTracker.QueryTrackingBehavior;
+        context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.TrackAll;
+        try
+        {
+            var tracked = context.TTortaOpcion.FirstOrDefault(x => x.Id == entidad.Id);
+            if (tracked == null)
+                throw new InvalidOperationException($"Opción con Id {entidad.Id} no encontrada.");
+
+            tracked.IdTorta = entidad.IdTorta;
+            tracked.Tipo = entidad.Tipo;
+            tracked.Valor = entidad.Valor;
+            tracked.PrecioExtra = entidad.PrecioExtra;
+            tracked.ModoPrecio = entidad.ModoPrecio;
+            tracked.PrecioPorUnidad = entidad.PrecioPorUnidad;
+            tracked.Obligatorio = entidad.Obligatorio;
+            tracked.Minimo = entidad.Minimo;
+            tracked.Maximo = entidad.Maximo;
+            tracked.Orden = entidad.Orden;
+            tracked.Activo = entidad.Activo;
+            tracked.UsuarioModificacion = entidad.UsuarioModificacion;
+            tracked.FechaModificacion = entidad.FechaModificacion ?? DateTime.UtcNow;
+            return tracked;
+        }
+        finally
+        {
+            context.ChangeTracker.QueryTrackingBehavior = previousBehavior;
+        }
     }
 }

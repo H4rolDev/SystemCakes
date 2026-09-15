@@ -309,6 +309,41 @@ namespace H.API.PRINCIPAL.Controllers
             }
         }
 
+        [HttpGet("ListadoRecojos")]
+        public IActionResult ListadoRecojos()
+        {
+            try
+            {
+                var service = new VentaService(unitOfWork);
+                return Ok(service.ObtenerListadoRecojos());
+            }
+            catch (Exception ex) { return new ErrorResult(ex, User); }
+        }
+
+        [HttpPost("CompletarRecojo")]
+        public IActionResult CompletarRecojo([FromBody] CompletarRecojoDTO dto)
+        {
+            try
+            {
+                var service = new VentaService(unitOfWork);
+                service.CompletarRecojo(dto);
+                return Ok(new { success = true, message = "Pedido recogido correctamente." });
+            }
+            catch (Exception ex) { return new ErrorResult(ex, User); }
+        }
+
+        [HttpPost("ValidarCodigoDelivery")]
+        public IActionResult ValidarCodigoDelivery(int idDelivery, string codigo, string documento)
+        {
+            try
+            {
+                var service = new VentaService(unitOfWork);
+                service.ValidarCodigoDelivery(idDelivery, codigo, documento);
+                return Ok(new { success = true, message = "Delivery validado correctamente." });
+            }
+            catch (Exception ex) { return new ErrorResult(ex, User); }
+        }
+
         [HttpPost("SubirImagenReferencia")]
         public async Task<IActionResult> SubirImagenReferencia([FromBody] SubirImagenDTO dto)
         {

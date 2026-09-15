@@ -52,6 +52,9 @@ public partial class sistemContext : DbContext
     public virtual DbSet<TMetaVenta> TMetaVenta { get; set; }
     public virtual DbSet<TConfiguracionDelivery> TConfiguracionDelivery { get; set; }
     public virtual DbSet<TTortaOpcion> TTortaOpcion { get; set; }
+    public virtual DbSet<TSolicitudPersonalizada> TSolicitudPersonalizada { get; set; }
+    public virtual DbSet<TCotizacionPersonalizada> TCotizacionPersonalizada { get; set; }
+    public virtual DbSet<TSolicitudHistorial> TSolicitudHistorial { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -511,6 +514,34 @@ public partial class sistemContext : DbContext
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasIndex(e => new { e.IdTorta, e.Tipo, e.Valor }).IsUnique();
+        });
+
+        modelBuilder.Entity<TSolicitudPersonalizada>(entity =>
+        {
+            entity.ToTable("TSolicitudPersonalizada");
+            entity.Property(x => x.Codigo).HasMaxLength(30).IsRequired();
+            entity.Property(x => x.Descripcion).HasMaxLength(2000).IsRequired();
+            entity.Property(x => x.ImagenReferencia).HasMaxLength(500);
+            entity.Property(x => x.Estado).HasMaxLength(60).IsRequired();
+            entity.Property(x => x.EstimadoMinimo).HasPrecision(10, 2);
+            entity.Property(x => x.EstimadoMaximo).HasPrecision(10, 2);
+            entity.HasIndex(x => x.Codigo).IsUnique();
+        });
+        modelBuilder.Entity<TCotizacionPersonalizada>(entity =>
+        {
+            entity.ToTable("TCotizacionPersonalizada");
+            entity.Property(x => x.PrecioFinal).HasPrecision(10, 2);
+            entity.Property(x => x.Adelanto).HasPrecision(10, 2);
+            entity.Property(x => x.CostoDelivery).HasPrecision(10, 2);
+            entity.Property(x => x.Estado).HasMaxLength(40).IsRequired();
+            entity.HasOne<TSolicitudPersonalizada>().WithMany().HasForeignKey(x => x.IdSolicitud).OnDelete(DeleteBehavior.Cascade);
+        });
+        modelBuilder.Entity<TSolicitudHistorial>(entity =>
+        {
+            entity.ToTable("TSolicitudHistorial");
+            entity.Property(x => x.EstadoNuevo).HasMaxLength(60).IsRequired();
+            entity.Property(x => x.Comentario).HasMaxLength(1000);
+            entity.HasOne<TSolicitudPersonalizada>().WithMany().HasForeignKey(x => x.IdSolicitud).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<TConfiguracionDelivery>(entity =>

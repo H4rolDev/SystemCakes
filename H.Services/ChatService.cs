@@ -218,6 +218,8 @@ namespace H.Services
                 : "No encontré una coincidencia exacta. Empecemos por la torta: ¿buscas chocolate, vainilla, cheesecake, tres leches u otra opción? Después afinamos tamaño, relleno y cantidad.";
             response.RequiresClarification = true;
             response.PendingField = "cake";
+            response.HasCustomRequestOption = true;
+            response.Actions.Add(Action("open_custom_request", "Solicitar un diseño personalizado"));
             foreach (var product in recommendations.Take(3))
                 response.Actions.Add(Action($"select_product_{product.Id}", $"Ver {product.Nombre}", product.Id));
             return Finish(response, session);

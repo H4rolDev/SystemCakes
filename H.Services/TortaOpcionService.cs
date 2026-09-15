@@ -34,6 +34,18 @@ public class TortaOpcionService
         return entidad;
     }
 
+    public TortaOpcion CambiarActivo(int id, bool activo, string usuario)
+    {
+        var entidad = _unitOfWork.TortaOpcionRepository.ObtenerPorId(id)
+            ?? throw new InvalidOperationException("La opción no existe.");
+        entidad.Activo = activo;
+        entidad.UsuarioModificacion = usuario;
+        entidad.FechaModificacion = DateTime.UtcNow;
+        _unitOfWork.TortaOpcionRepository.Update(entidad);
+        _unitOfWork.Commit();
+        return entidad;
+    }
+
     public int Delete(int id, string usuario)
     {
         var resultado = _unitOfWork.TortaOpcionRepository.Delete(id, usuario);

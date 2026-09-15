@@ -152,6 +152,46 @@ using (var scope = app.Services.CreateScope())
         var canConnect = await context.Database.CanConnectAsync();
         if (canConnect)
         {
+            // Estas tablas deben existir antes de ejecutar cualquier otra rutina de arranque.
+            // Asi el modulo de solicitudes no depende de que otra migracion previa termine bien.
+            await context.Database.ExecuteSqlRawAsync(@"
+IF OBJECT_ID('dbo.TSolicitudPersonalizada', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.TSolicitudPersonalizada
+    (
+        Id INT IDENTITY(1,1) PRIMARY KEY, Codigo NVARCHAR(30) NOT NULL UNIQUE, IdPersona INT NOT NULL DEFAULT(0),
+        NombreCliente NVARCHAR(150) NULL, EmailCliente NVARCHAR(150) NULL, TelefonoCliente NVARCHAR(30) NULL, TokenAcceso NVARCHAR(80) NOT NULL DEFAULT(''),
+        Descripcion NVARCHAR(2000) NOT NULL, ImagenReferencia NVARCHAR(500) NULL, Evento NVARCHAR(100) NULL,
+        Sabor NVARCHAR(100) NULL, Relleno NVARCHAR(100) NULL, Tamano NVARCHAR(50) NULL, Porciones INT NULL,
+        Pisos INT NOT NULL DEFAULT(1), Cobertura NVARCHAR(100) NULL, Colores NVARCHAR(200) NULL,
+        TextoDecorativo NVARCHAR(300) NULL, FechaEntregaSolicitada DATETIME NULL, PresupuestoMinimo DECIMAL(10,2) NULL,
+        PresupuestoMaximo DECIMAL(10,2) NULL, EstimadoMinimo DECIMAL(10,2) NULL, EstimadoMaximo DECIMAL(10,2) NULL,
+        Estado NVARCHAR(60) NOT NULL, Observaciones NVARCHAR(1000) NULL, Activo BIT NOT NULL DEFAULT(1),
+        UsuarioCreacion NVARCHAR(100) NOT NULL, UsuarioModificacion NVARCHAR(100) NULL, FechaCreacion DATETIME NOT NULL, FechaModificacion DATETIME NULL
+    );
+END
+IF OBJECT_ID('dbo.TCotizacionPersonalizada', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.TCotizacionPersonalizada
+    (
+        Id INT IDENTITY(1,1) PRIMARY KEY, IdSolicitud INT NOT NULL, Version INT NOT NULL, PrecioFinal DECIMAL(10,2) NOT NULL,
+        Adelanto DECIMAL(10,2) NOT NULL, CostoDelivery DECIMAL(10,2) NOT NULL, FechaEntrega DATETIME NOT NULL,
+        HoraEntrega TIME NULL, FechaVencimiento DATETIME NOT NULL, Observaciones NVARCHAR(1000) NULL, Estado NVARCHAR(40) NOT NULL,
+        Activo BIT NOT NULL DEFAULT(1), UsuarioCreacion NVARCHAR(100) NOT NULL, UsuarioModificacion NVARCHAR(100) NULL,
+        FechaCreacion DATETIME NOT NULL, FechaModificacion DATETIME NULL,
+        CONSTRAINT FK_TCotizacionSolicitudEarly FOREIGN KEY (IdSolicitud) REFERENCES dbo.TSolicitudPersonalizada(Id)
+    );
+END
+IF OBJECT_ID('dbo.TSolicitudHistorial', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.TSolicitudHistorial
+    (
+        Id INT IDENTITY(1,1) PRIMARY KEY, IdSolicitud INT NOT NULL, EstadoAnterior NVARCHAR(60) NULL, EstadoNuevo NVARCHAR(60) NOT NULL,
+        Comentario NVARCHAR(1000) NULL, Activo BIT NOT NULL DEFAULT(1), UsuarioCreacion NVARCHAR(100) NOT NULL,
+        UsuarioModificacion NVARCHAR(100) NULL, FechaCreacion DATETIME NOT NULL, FechaModificacion DATETIME NULL,
+        CONSTRAINT FK_TSolicitudHistorialSolicitudEarly FOREIGN KEY (IdSolicitud) REFERENCES dbo.TSolicitudPersonalizada(Id)
+    );
+END");
             await context.Database.ExecuteSqlRawAsync(@"
 IF NOT EXISTS (SELECT 1 FROM dbo.TEstadoVenta WHERE Nombre = 'Entregado')
     INSERT INTO dbo.TEstadoVenta (Nombre, Activo, UsuarioCreacion, FechaCreacion)
@@ -208,14 +248,20 @@ IF COL_LENGTH('dbo.TTortaOpcion', 'PrecioPorUnidad') IS NULL
 IF COL_LENGTH('dbo.TTortaOpcion', 'Obligatorio') IS NULL
     ALTER TABLE dbo.TTortaOpcion ADD Obligatorio BIT NOT NULL CONSTRAINT DF_TTortaOpcion_Obligatorio DEFAULT (0);
 IF COL_LENGTH('dbo.TTortaOpcion', 'Minimo') IS NULL
-    ALTER TABLE dbo.TTortaOpcion ADD Minimo INT NULL;");
+    ALTER TABLE dbo.TTortaOpcion ADD Minimo INT NULL;
+IF COL_LENGTH('dbo.TTortaOpcion', 'Maximo') IS NULL
+    ALTER TABLE dbo.TTortaOpcion ADD Maximo INT NULL;");
             await context.Database.ExecuteSqlRawAsync(@"
 IF COL_LENGTH('dbo.TVenta', 'MontoPagado') IS NULL
     ALTER TABLE dbo.TVenta ADD MontoPagado DECIMAL(10,2) NOT NULL CONSTRAINT DF_TVenta_MontoPagado DEFAULT (0);
 IF COL_LENGTH('dbo.TVenta', 'SaldoPendiente') IS NULL
     ALTER TABLE dbo.TVenta ADD SaldoPendiente DECIMAL(10,2) NOT NULL CONSTRAINT DF_TVenta_SaldoPendiente DEFAULT (0);
 IF COL_LENGTH('dbo.TVenta', 'RequiereAnticipo') IS NULL
-    ALTER TABLE dbo.TVenta ADD RequiereAnticipo BIT NOT NULL CONSTRAINT DF_TVenta_RequiereAnticipo DEFAULT (0);");
+    ALTER TABLE dbo.TVenta ADD RequiereAnticipo BIT NOT NULL CONSTRAINT DF_TVenta_RequiereAnticipo DEFAULT (0);
+IF COL_LENGTH('dbo.TVenta', 'CodigoEntrega') IS NULL
+    ALTER TABLE dbo.TVenta ADD CodigoEntrega CHAR(6) NULL;
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'UX_TVenta_CodigoEntrega' AND object_id = OBJECT_ID('dbo.TVenta'))
+    CREATE UNIQUE INDEX UX_TVenta_CodigoEntrega ON dbo.TVenta(CodigoEntrega) WHERE CodigoEntrega IS NOT NULL;");
             await context.Database.ExecuteSqlRawAsync(@"
 IF COL_LENGTH('dbo.TEntregaDelivery', 'Latitud') IS NULL
     ALTER TABLE dbo.TEntregaDelivery ADD Latitud DECIMAL(10,7) NULL;
@@ -248,6 +294,48 @@ IF COL_LENGTH('dbo.TVentaDetalle', 'FechaEntregaSolicitada') IS NULL
     ALTER TABLE dbo.TVentaDetalle ADD FechaEntregaSolicitada DATETIME NULL;
 IF COL_LENGTH('dbo.TVentaDetalle', 'ImagenReferencia') IS NULL
     ALTER TABLE dbo.TVentaDetalle ADD ImagenReferencia NVARCHAR(500) NULL;");
+            await context.Database.ExecuteSqlRawAsync(@"
+IF OBJECT_ID('dbo.TSolicitudPersonalizada', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.TSolicitudPersonalizada
+    (
+        Id INT IDENTITY(1,1) PRIMARY KEY, Codigo NVARCHAR(30) NOT NULL UNIQUE, IdPersona INT NOT NULL DEFAULT(0),
+        NombreCliente NVARCHAR(150) NULL, EmailCliente NVARCHAR(150) NULL, TelefonoCliente NVARCHAR(30) NULL, TokenAcceso NVARCHAR(80) NOT NULL DEFAULT(''),
+        Descripcion NVARCHAR(2000) NOT NULL, ImagenReferencia NVARCHAR(500) NULL, Evento NVARCHAR(100) NULL,
+        Sabor NVARCHAR(100) NULL, Relleno NVARCHAR(100) NULL, Tamano NVARCHAR(50) NULL, Porciones INT NULL,
+        Pisos INT NOT NULL DEFAULT(1), Cobertura NVARCHAR(100) NULL, Colores NVARCHAR(200) NULL,
+        TextoDecorativo NVARCHAR(300) NULL, FechaEntregaSolicitada DATETIME NULL, PresupuestoMinimo DECIMAL(10,2) NULL,
+        PresupuestoMaximo DECIMAL(10,2) NULL, EstimadoMinimo DECIMAL(10,2) NULL, EstimadoMaximo DECIMAL(10,2) NULL,
+        Estado NVARCHAR(60) NOT NULL, Observaciones NVARCHAR(1000) NULL, Activo BIT NOT NULL DEFAULT(1),
+        UsuarioCreacion NVARCHAR(100) NOT NULL, UsuarioModificacion NVARCHAR(100) NULL, FechaCreacion DATETIME NOT NULL, FechaModificacion DATETIME NULL
+    );
+END
+IF COL_LENGTH('dbo.TSolicitudPersonalizada', 'NombreCliente') IS NULL ALTER TABLE dbo.TSolicitudPersonalizada ADD NombreCliente NVARCHAR(150) NULL;
+IF COL_LENGTH('dbo.TSolicitudPersonalizada', 'EmailCliente') IS NULL ALTER TABLE dbo.TSolicitudPersonalizada ADD EmailCliente NVARCHAR(150) NULL;
+IF COL_LENGTH('dbo.TSolicitudPersonalizada', 'TelefonoCliente') IS NULL ALTER TABLE dbo.TSolicitudPersonalizada ADD TelefonoCliente NVARCHAR(30) NULL;
+IF COL_LENGTH('dbo.TSolicitudPersonalizada', 'TokenAcceso') IS NULL ALTER TABLE dbo.TSolicitudPersonalizada ADD TokenAcceso NVARCHAR(80) NOT NULL CONSTRAINT DF_TSolicitudToken DEFAULT('');
+IF OBJECT_ID('dbo.TCotizacionPersonalizada', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.TCotizacionPersonalizada
+    (
+        Id INT IDENTITY(1,1) PRIMARY KEY, IdSolicitud INT NOT NULL, Version INT NOT NULL, PrecioFinal DECIMAL(10,2) NOT NULL,
+        Adelanto DECIMAL(10,2) NOT NULL, CostoDelivery DECIMAL(10,2) NOT NULL, FechaEntrega DATETIME NOT NULL,
+        HoraEntrega TIME NULL, FechaVencimiento DATETIME NOT NULL, Observaciones NVARCHAR(1000) NULL, Estado NVARCHAR(40) NOT NULL,
+        Activo BIT NOT NULL DEFAULT(1), UsuarioCreacion NVARCHAR(100) NOT NULL, UsuarioModificacion NVARCHAR(100) NULL,
+        FechaCreacion DATETIME NOT NULL, FechaModificacion DATETIME NULL,
+        CONSTRAINT FK_TCotizacionSolicitud FOREIGN KEY (IdSolicitud) REFERENCES dbo.TSolicitudPersonalizada(Id)
+    );
+END
+IF OBJECT_ID('dbo.TSolicitudHistorial', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.TSolicitudHistorial
+    (
+        Id INT IDENTITY(1,1) PRIMARY KEY, IdSolicitud INT NOT NULL, EstadoAnterior NVARCHAR(60) NULL, EstadoNuevo NVARCHAR(60) NOT NULL,
+        Comentario NVARCHAR(1000) NULL, Activo BIT NOT NULL DEFAULT(1), UsuarioCreacion NVARCHAR(100) NOT NULL,
+        UsuarioModificacion NVARCHAR(100) NULL, FechaCreacion DATETIME NOT NULL, FechaModificacion DATETIME NULL,
+        CONSTRAINT FK_TSolicitudHistorialSolicitud FOREIGN KEY (IdSolicitud) REFERENCES dbo.TSolicitudPersonalizada(Id)
+    );
+END");
             Console.WriteLine("✅ Conexión a SQL Server exitosa.");
         }
         else

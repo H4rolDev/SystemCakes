@@ -8,6 +8,7 @@ using H.DTOs;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using System.Security.Cryptography;
 
 namespace H.Services
 {
@@ -344,7 +345,6 @@ namespace H.Services
             }
 
             var totalVenta = subTotal + costoDelivery;
-            var totalPagos = dto.Pagos.Sum(x => x.Monto);
             var metodosPago = dto.Pagos
                 .Select(p => _unitOfWork.MetodoPagoRepository.GetById(p.IdMetodoPago)?.Nombre ?? string.Empty)
                 .ToList();
@@ -355,22 +355,40 @@ namespace H.Services
                     !EsMetodoPagoDeliveryPermitido(nombre)))
                 throw new Exception("Para delivery usa Yape, Plin, banca móvil o depósito. No se acepta efectivo ni tarjeta.");
 
-            var esPagoEnEfectivo = metodosPago.All(EsMetodoPagoEfectivo);
-            var requiereAnticipo = !esPagoEnEfectivo;
-            var minimoAnticipo = decimal.Round(totalVenta * 0.5m, 2);
+            var pagosDigitales = dto.Pagos
+                .Where(p => !EsMetodoPagoEfectivo(_unitOfWork.MetodoPagoRepository.GetById(p.IdMetodoPago)?.Nombre ?? string.Empty))
+                .ToList();
+            var pagosEfectivo = dto.Pagos
+                .Where(p => EsMetodoPagoEfectivo(_unitOfWork.MetodoPagoRepository.GetById(p.IdMetodoPago)?.Nombre ?? string.Empty))
+                .ToList();
+            var totalPagoDigital = decimal.Round(pagosDigitales.Sum(x => x.Monto), 2);
+            var totalPagoEfectivo = decimal.Round(pagosEfectivo.Sum(x => x.Monto), 2);
+            var tieneComprobante = !string.IsNullOrEmpty(dto.ImagenComprobante);
+            var requiereAnticipo = totalPagoDigital > 0;
 
-            if (requiereAnticipo)
+            if (esDelivery && totalPagoEfectivo > 0)
+                throw new Exception("Delivery solo acepta pagos digitales.");
+
+            if (esDelivery && totalPagoDigital < totalVenta)
+                throw new Exception("El delivery debe pagarse completamente mediante banca móvil.");
+
+            if (totalPagoDigital > 0)
             {
-                if (totalPagos <= minimoAnticipo)
-                    throw new Exception("El monto depositado debe ser mayor al 50% del total.");
-                if (totalPagos > totalVenta)
-                    throw new Exception("El monto depositado no puede superar el total de la venta.");
+                if (totalPagoDigital > totalVenta)
+                    throw new Exception("El monto digital no puede superar el total de la venta.");
                 if (string.IsNullOrWhiteSpace(dto.ImagenComprobante))
                     throw new Exception("El pago debe incluir un comprobante de pago.");
             }
-            else if (totalPagos < totalVenta)
+            if (esDelivery && !tieneComprobante)
+                throw new Exception("El delivery debe incluir un comprobante de pago.");
+            if (totalPagoEfectivo > 0 && dto.IdTipoEntrega != (int)TipoEntregaEnum.RecojoTienda)
+                throw new Exception("El efectivo solo está permitido para recojo en tienda.");
+            if (totalPagoDigital + totalPagoEfectivo > totalVenta)
+                throw new Exception("El monto pagado no puede superar el total de la venta.");
+            if (totalPagoDigital == 0 && totalPagoEfectivo < totalVenta && dto.IdTipoEntrega == (int)TipoEntregaEnum.RecojoTienda)
             {
-                throw new Exception("El pago en efectivo se registra por el total de la venta y se cancela en tienda.");
+                // El efectivo declarado representa la intención de pago; se cobra al recoger.
+                totalPagoEfectivo = totalVenta;
             }
 
             // Reserva las unidades de forma atómica mientras el pago está pendiente.
@@ -391,8 +409,9 @@ namespace H.Services
                 throw;
             }
 
-            var tieneComprobante = !string.IsNullOrEmpty(dto.ImagenComprobante);
-            var estadoInicial = tieneComprobante ? (int)EstadoVentaEnum.EsperandoValidacion : (int)EstadoVentaEnum.Pagada;
+            var estadoInicial = tieneComprobante
+                ? (int)EstadoVentaEnum.EsperandoValidacion
+                : (int)EstadoVentaEnum.Pendiente;
 
             var venta = new TVenta
             {
@@ -402,9 +421,10 @@ namespace H.Services
                 FechaVenta = fecha,
                 SubTotal = subTotal,
                 Total = totalVenta,
-                MontoPagado = decimal.Round(totalPagos, 2),
-                SaldoPendiente = decimal.Round(Math.Max(0, totalVenta - totalPagos), 2),
+                MontoPagado = totalPagoDigital,
+                SaldoPendiente = decimal.Round(Math.Max(0, totalVenta - totalPagoDigital), 2),
                 RequiereAnticipo = requiereAnticipo,
+                CodigoEntrega = GenerarCodigoEntrega(),
                 Activo = true,
                 UsuarioCreacion = dto.Usuario,
                 FechaCreacion = fecha,
@@ -451,24 +471,10 @@ namespace H.Services
                 _unitOfWork.Commit();
 
                 // El stock ya fue reservado atómicamente antes de crear la venta.
-                if (estadoInicial == (int)EstadoVentaEnum.Pagada)
-                {
-                    _unitOfWork.MovimientoTortaRepository.Add(new TMovimientoTorta
-                    {
-                        IdTorta = d.IdTorta,
-                        IdTipoMovimiento = (int)TipoMovimientoEnum.Venta,
-                        Cantidad = d.Cantidad,
-                        FechaMovimiento = fecha,
-                        Referencia = $"Venta #{venta.Id}",
-                        Activo = true,
-                        UsuarioCreacion = dto.Usuario,
-                        FechaCreacion = fecha
-                    });
-                }
             }
 
             // PAGOS
-            foreach (var p in dto.Pagos)
+            foreach (var p in pagosDigitales.Where(p => p.Monto > 0))
             {
                 _unitOfWork.PagoVentaRepository.Add(new TPagoVenta
                 {
@@ -534,13 +540,18 @@ namespace H.Services
                 (Tipo: "porciones", Valor: detalle.Porciones?.ToString())
             };
             var opciones = _unitOfWork.TortaOpcionRepository.ObtenerPorTorta(torta.Id, true);
+            var pisos = detalle.Pisos ?? 1;
+            var opcionesPisos = opciones.Where(x => x.Tipo.Equals("pisos", StringComparison.OrdinalIgnoreCase)).ToList();
+            if (opcionesPisos.Count == 0 && pisos > 4)
+                throw new Exception("Esta torta permite como máximo 4 pisos hasta que se configure una regla de pisos.");
+
             foreach (var grupo in opciones.Where(x => x.Obligatorio).GroupBy(x => x.Tipo, StringComparer.OrdinalIgnoreCase))
             {
                 var seleccion = seleccionadas.FirstOrDefault(x => x.Tipo.Equals(grupo.Key, StringComparison.OrdinalIgnoreCase));
                 if (string.IsNullOrWhiteSpace(seleccion.Valor))
                     throw new Exception($"Debes seleccionar una opción de {grupo.Key} para {torta.Nombre}.");
             }
-            decimal extra = 0;
+            decimal extra = opcionesPisos.Count == 0 ? Math.Max(0, pisos - 1) * 20m : 0m;
             foreach (var seleccion in seleccionadas.Where(x => !string.IsNullOrWhiteSpace(x.Valor)))
             {
                 var grupoConfigurado = opciones.Any(x => x.Tipo.Equals(seleccion.Tipo, StringComparison.OrdinalIgnoreCase));
@@ -701,6 +712,8 @@ namespace H.Services
         public object Detalle(int idVenta)
         {
             var venta = _unitOfWork.VentaRepository.GetById(idVenta);
+            if (venta == null)
+                throw new Exception("Venta no encontrada.");
             var persona = _unitOfWork.PersonaRepository.GetById(venta.IdPersona);
 
             var detalles = _unitOfWork.VentaDetalleRepository
@@ -714,6 +727,10 @@ namespace H.Services
 
             var comp = _unitOfWork.ComprobanteVentaRepository
                 .GetBy(x => x.IdVenta == idVenta).FirstOrDefault();
+            var tortas = detalles.Select(x => x.IdTorta).Distinct()
+                .ToDictionary(id => id, id => _unitOfWork.TortaRepository.GetById(id)?.Nombre ?? "Torta");
+            var metodos = pagos.Select(x => x.IdMetodoPago).Distinct()
+                .ToDictionary(id => id, id => _unitOfWork.MetodoPagoRepository.GetById(id)?.Nombre ?? "Método de pago");
 
             return new
             {
@@ -724,9 +741,12 @@ namespace H.Services
                     venta.SubTotal,
                     venta.Total,
                     venta.IdEstadoVenta,
-                    venta.IdTipoEntrega,
-                    venta.UsuarioCreacion,
-                    venta.ImagenComprobante
+                     venta.IdTipoEntrega,
+                     venta.UsuarioCreacion,
+                     venta.ImagenComprobante,
+                     venta.MontoPagado,
+                     venta.SaldoPendiente,
+                     venta.CodigoEntrega
                 },
                 cliente = new
                 {
@@ -737,7 +757,7 @@ namespace H.Services
                 detalles = detalles.Select(d => new
                 {
                     d.IdTorta,
-                    torta = _unitOfWork.TortaRepository.GetById(d.IdTorta).Nombre,
+                    torta = tortas[d.IdTorta],
                     d.Cantidad,
                     d.PrecioBase,
                     d.PrecioPersonalizacion,
@@ -760,7 +780,7 @@ namespace H.Services
                 pagos = pagos.Select(p => new
                 {
                     p.IdMetodoPago,
-                    nombreMetodo = _unitOfWork.MetodoPagoRepository.GetById(p.IdMetodoPago).Nombre,
+                    nombreMetodo = metodos[p.IdMetodoPago],
                     p.Monto,
                     p.NumeroOperacion
                 }).ToList(),
@@ -1052,6 +1072,7 @@ _unitOfWork.Commit();
                      venta.MontoPagado,
                      venta.SaldoPendiente,
                      venta.RequiereAnticipo,
+                     codigoEntrega = venta.CodigoEntrega,
                      idEstadoVenta = venta.IdEstadoVenta,
                      estadoVenta = _unitOfWork.EstadoVentaRepository.GetById(venta.IdEstadoVenta)?.Nombre ?? "Desconocido",
                      productos = ObtenerProductosDelivery(venta.Id),
@@ -1084,6 +1105,37 @@ _unitOfWork.Commit();
                 PaginaActual = pagina,
                 TamanioPagina = tamanioPagina
             };
+        }
+
+        public IEnumerable<object> ObtenerListadoRecojos()
+        {
+            return _unitOfWork.VentaRepository.GetAll().AsEnumerable()
+                .Where(x => x.Activo && x.IdTipoEntrega == (int)TipoEntregaEnum.RecojoTienda)
+                .OrderByDescending(x => x.FechaVenta)
+                .Select(venta => new
+                {
+                    id = venta.Id,
+                    venta.FechaVenta,
+                    venta.Total,
+                    venta.MontoPagado,
+                    venta.SaldoPendiente,
+                    venta.IdEstadoVenta,
+                    codigoEntrega = venta.CodigoEntrega,
+                    cliente = ObtenerNombreCliente(venta.IdPersona),
+                    documento = _unitOfWork.PersonaRepository.GetById(venta.IdPersona)?.NumeroDocumento,
+                    detalles = _unitOfWork.VentaDetalleRepository.GetBy(x => x.IdVenta == venta.Id && x.Activo)
+                        .Select(d => new
+                        {
+                            d.IdTorta,
+                            torta = _unitOfWork.TortaRepository.GetById(d.IdTorta)?.Nombre ?? "Torta",
+                            d.Cantidad,
+                            d.SubTotal,
+                            d.TamanoPersonalizado,
+                            d.SaborPersonalizado,
+                            d.RellenoPersonalizado,
+                            d.FechaEntregaSolicitada
+                        }).ToList()
+                 }).ToList();
         }
 
         public void ActualizarEstadoDelivery(int idDelivery, int idEstadoEntrega, string usuario)
@@ -1223,8 +1275,9 @@ _unitOfWork.Commit();
                     MontoPagado = venta.MontoPagado,
                     SaldoPendiente = venta.SaldoPendiente,
                     RequiereAnticipo = venta.RequiereAnticipo,
-                    EstadoPago = estadoPago?.Nombre ?? "Desconocido",
-                    IdEstadoVenta = venta.IdEstadoVenta,
+                     EstadoPago = estadoPago?.Nombre ?? "Desconocido",
+                     CodigoEntrega = venta.CodigoEntrega,
+                     IdEstadoVenta = venta.IdEstadoVenta,
                     IdEstadoEntrega = entrega?.IdEstadoEntrega,
                     Productos = nombresTortas,
                     Cantidad = (int)detalles.Sum(x => x.Cantidad),
@@ -1242,6 +1295,111 @@ _unitOfWork.Commit();
             }
 
             return result;
+        }
+
+        public void CompletarRecojo(CompletarRecojoDTO dto)
+        {
+            var venta = _unitOfWork.VentaRepository.GetById(dto.IdVenta)
+                ?? throw new Exception("Pedido no encontrado.");
+            var persona = _unitOfWork.PersonaRepository.GetById(venta.IdPersona)
+                ?? throw new Exception("Cliente no encontrado.");
+
+            if (venta.IdTipoEntrega != (int)TipoEntregaEnum.RecojoTienda)
+                throw new Exception("El pedido no corresponde a recojo en tienda.");
+            if (!string.Equals(venta.CodigoEntrega?.Trim(), dto.CodigoEntrega?.Trim(), StringComparison.OrdinalIgnoreCase))
+                throw new Exception("El código de entrega no coincide.");
+            if (!string.Equals(persona.NumeroDocumento?.Trim(), dto.DocumentoCliente?.Trim(), StringComparison.OrdinalIgnoreCase))
+                throw new Exception("El documento del cliente no coincide.");
+            if (venta.IdEstadoVenta == (int)EstadoVentaEnum.Cancelada || venta.IdEstadoVenta == (int)EstadoVentaEnum.Rechazada)
+                throw new Exception("El pedido no puede ser entregado.");
+
+            var saldo = decimal.Round(Math.Max(0, (venta.Total ?? 0) - venta.MontoPagado), 2);
+            var cobro = decimal.Round(Math.Max(0, dto.MontoCobrado), 2);
+            if (cobro != saldo)
+                throw new Exception($"Debe cobrar exactamente el saldo pendiente: S/ {saldo:0.00}.");
+            if (cobro > 0)
+            {
+                if (dto.IdMetodoPago != (int)MetodoPagoEnum.Efectivo)
+                    throw new Exception("El saldo de un recojo en tienda debe cobrarse en efectivo.");
+                _unitOfWork.PagoVentaRepository.Add(new TPagoVenta
+                {
+                    IdVenta = venta.Id,
+                    IdMetodoPago = dto.IdMetodoPago,
+                    Monto = cobro,
+                    FechaPago = Fecha.Hoy,
+                    Activo = true,
+                    UsuarioCreacion = dto.Usuario,
+                    FechaCreacion = Fecha.Hoy
+                });
+                venta.MontoPagado = decimal.Round(venta.MontoPagado + cobro, 2);
+            }
+
+            if (venta.MontoPagado < (venta.Total ?? 0))
+                throw new Exception("El pedido debe estar completamente pagado antes de entregarlo.");
+
+            var estadoAnterior = venta.IdEstadoVenta;
+            venta.SaldoPendiente = 0;
+            venta.IdEstadoVenta = (int)EstadoVentaEnum.Entregado;
+            venta.FechaModificacion = Fecha.Hoy;
+            venta.UsuarioModificacion = dto.Usuario;
+            _unitOfWork.VentaRepository.Update(venta);
+
+            if (estadoAnterior == (int)EstadoVentaEnum.Pendiente)
+            {
+                foreach (var detalle in _unitOfWork.VentaDetalleRepository.GetAll().Where(x => x.IdVenta == venta.Id && x.Activo))
+                {
+                    _unitOfWork.MovimientoTortaRepository.Add(new TMovimientoTorta
+                    {
+                        IdTorta = detalle.IdTorta,
+                        IdTipoMovimiento = (int)TipoMovimientoEnum.Venta,
+                        Cantidad = detalle.Cantidad,
+                        FechaMovimiento = Fecha.Hoy,
+                        Referencia = $"Venta #{venta.Id} - Recojo",
+                        Activo = true,
+                        UsuarioCreacion = dto.Usuario,
+                        FechaCreacion = Fecha.Hoy
+                    });
+                }
+            }
+            _unitOfWork.Commit();
+            _unitOfWork.VentaRepository.AgregarHistorial(new VentaHistorialDTO
+            {
+                IdVenta = venta.Id,
+                IdEstadoAnterior = estadoAnterior,
+                IdEstadoNuevo = (int)EstadoVentaEnum.Entregado,
+                Accion = "Recogido en tienda",
+                Observacion = "Pedido validado con código y documento; pago completado",
+                Usuario = dto.Usuario
+            });
+            _unitOfWork.Commit();
+        }
+
+        public void ValidarCodigoDelivery(int idDelivery, string codigo, string documento)
+        {
+            var delivery = _unitOfWork.EntregaDeliveryRepository.GetById(idDelivery)
+                ?? throw new Exception("Delivery no encontrado.");
+            var venta = _unitOfWork.VentaRepository.GetById(delivery.IdVenta)
+                ?? throw new Exception("Venta asociada no encontrada.");
+            var persona = _unitOfWork.PersonaRepository.GetById(venta.IdPersona);
+            if (venta.IdTipoEntrega != (int)TipoEntregaEnum.Delivery)
+                throw new Exception("El pedido no corresponde a delivery.");
+            if (!string.Equals(venta.CodigoEntrega?.Trim(), codigo?.Trim(), StringComparison.OrdinalIgnoreCase))
+                throw new Exception("El código de entrega no coincide.");
+            if (persona == null || !string.Equals(persona.NumeroDocumento?.Trim(), documento?.Trim(), StringComparison.OrdinalIgnoreCase))
+                throw new Exception("El documento del cliente no coincide.");
+        }
+
+        private string GenerarCodigoEntrega()
+        {
+            const string caracteres = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+            for (var intento = 0; intento < 10; intento++)
+            {
+                var bytes = RandomNumberGenerator.GetBytes(6);
+                var codigo = new string(bytes.Select(x => caracteres[x % caracteres.Length]).ToArray());
+                if (!_unitOfWork.VentaRepository.GetAll().Any(x => x.CodigoEntrega == codigo))
+                    return codigo;
+            }
+            throw new Exception("No se pudo generar un código de entrega único.");
         }
 
         public void CancelarEntrega(int idDelivery, string motivo, string usuario)
@@ -1637,6 +1795,8 @@ _unitOfWork.Commit();
 
         public void CompletarEntrega(int idDelivery, string usuario, decimal? montoCobrado, int idMetodoPago)
         {
+            if (idMetodoPago == (int)MetodoPagoEnum.Efectivo && (montoCobrado ?? 0) > 0)
+                throw new Exception("Delivery solo acepta pagos digitales.");
             var delivery = _unitOfWork.EntregaDeliveryRepository.GetById(idDelivery);
             if (delivery == null)
                 throw new Exception("Delivery no encontrado.");
@@ -1924,6 +2084,7 @@ _unitOfWork.Commit();
                 venta.Total,
                 venta.MontoPagado,
                 venta.SaldoPendiente,
+                codigoEntrega = venta.CodigoEntrega,
                 productos = ObtenerProductosDelivery(venta.Id),
                 d.IdEstadoEntrega,
                 estado = ObtenerEstadoEntrega(d.IdEstadoEntrega)?.Nombre ?? "Desconocido",

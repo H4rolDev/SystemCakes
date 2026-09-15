@@ -8,5 +8,6 @@ namespace H.DataAccess.Models
 {
     public partial class TVenta : BaseEntity    
     {
+        public string? CodigoEntrega { get; set; }
     }
 }

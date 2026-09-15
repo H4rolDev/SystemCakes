@@ -71,6 +71,27 @@ public class TortaOpcionController : ControllerBase
         return Ok(new TortaOpcionService(_unitOfWork).Delete(id, User.Identity?.Name ?? "admin"));
     }
 
+    [HttpPost("{id:int}/estado")]
+    [Authorize(Roles = "Administrador")]
+    public IActionResult CambiarEstado(int id, [FromBody] EstadoOpcionRequest request)
+    {
+        if (id <= 0) return BadRequest(new { message = "La opción no es válida." });
+        try
+        {
+            var resultado = new TortaOpcionService(_unitOfWork).CambiarActivo(id, request?.Activo == true, User.Identity?.Name ?? "admin");
+            return Ok(ToDto(resultado));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+    }
+
+    public sealed class EstadoOpcionRequest
+    {
+        public bool Activo { get; set; }
+    }
+
     private static bool EsValido(TortaOpcionDTO dto) =>
         dto != null && dto.IdTorta > 0 &&
         TiposPermitidos.Contains(dto.Tipo?.Trim().ToLowerInvariant()) &&
