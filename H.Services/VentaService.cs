@@ -547,6 +547,7 @@ namespace H.Services
                 .Select(x => x.Maximo!.Value)
                 .DefaultIfEmpty(4)
                 .Max();
+            maximoPisosConfigurado = Math.Min(4, maximoPisosConfigurado);
             if (pisos > maximoPisosConfigurado)
                 throw new Exception($"Esta torta permite como máximo {maximoPisosConfigurado} pisos.");
 
