@@ -542,8 +542,13 @@ namespace H.Services
             var opciones = _unitOfWork.TortaOpcionRepository.ObtenerPorTorta(torta.Id, true);
             var pisos = detalle.Pisos ?? 1;
             var opcionesPisos = opciones.Where(x => x.Tipo.Equals("pisos", StringComparison.OrdinalIgnoreCase)).ToList();
-            if (opcionesPisos.Count == 0 && pisos > 4)
-                throw new Exception("Esta torta permite como máximo 4 pisos hasta que se configure una regla de pisos.");
+            var maximoPisosConfigurado = opcionesPisos
+                .Where(x => x.Maximo.HasValue && x.Maximo.Value > 0)
+                .Select(x => x.Maximo!.Value)
+                .DefaultIfEmpty(4)
+                .Max();
+            if (pisos > maximoPisosConfigurado)
+                throw new Exception($"Esta torta permite como máximo {maximoPisosConfigurado} pisos.");
 
             foreach (var grupo in opciones.Where(x => x.Obligatorio).GroupBy(x => x.Tipo, StringComparer.OrdinalIgnoreCase))
             {
